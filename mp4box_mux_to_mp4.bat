@@ -64,7 +64,8 @@ rem :fps=23.976
 echo.
 "mp4box" -for-test ^
     -tmp "%TEMP%" ^
-    -brand mp42:1 -ab mp41 -rb iso2 -rb iso6 ^
+    -brand mp42:1 -ab mp41 ^
+    -ab iso6 -ab isom -rb iso2 ^
     %vid_cmd% ^
     %aud_cmd% ^
     %srt_cmd% ^
