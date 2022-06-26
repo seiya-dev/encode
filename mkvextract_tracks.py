@@ -95,6 +95,8 @@ def extractFile(file: Path):
             trackExt = 'ac3'
         if trackCodec == 'A_FLAC':
             trackExt = 'flac'
+        if trackCodec == 'A_TRUEHD':
+            trackExt = 'thd'
         if trackCodec == 'A_VORBIS':
             trackExt = 'ogg'
         if trackCodec == 'S_TEXT/ASS':
