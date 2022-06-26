@@ -83,6 +83,10 @@ def extractFile(file: Path):
         trackExt = 'bin'
         if trackCodec == 'V_MPEG4/ISO/AVC':
             trackExt = '264'
+        if trackCodec == 'V_MPEG4/ISO/HEVC':
+            trackExt = '265'
+        if trackCodec == 'V_MPEGH/ISO/HEVC':
+            trackExt = '265'
         if trackCodec == 'V_THEORA':
             trackExt = 'ogv'
         if trackCodec == 'A_AAC':
