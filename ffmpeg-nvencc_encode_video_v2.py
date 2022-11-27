@@ -142,6 +142,7 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
             encCmd.extend([ '--output-depth', '8' ])
         
         vFilters = '[0:v:0]format=yuv420p'
+        overlay = False
         inSubsLog = ''
         
         if len(inSubs) > 0 and subsFileIndex > -1 and subsTrackIndex > -1:
