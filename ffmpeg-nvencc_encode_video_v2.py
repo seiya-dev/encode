@@ -141,7 +141,7 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
             encCmd.extend([ '--max-bitrate', '10000', '--lookahead', '32' ])
             encCmd.extend([ '--output-depth', '8' ])
         
-        vFilters = [ 'format=yuv420p' ]
+        vFilters = '[0:v:0]format=yuv420p'
         inSubsLog = ''
         
         if len(inSubs) > 0 and subsFileIndex > -1 and subsTrackIndex > -1:
@@ -154,9 +154,15 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
                 if inSubsFile.lower().endswith('.mkv'):
                     inpSubsStr = inpSubsStr + f':stream_index={subsTrackIndex}'
                     inSubsLog = inSubsLog + f':track={subsTrackIndex}'
-                vFilters.append(f'subtitles={inpSubsStr}:fontsdir=\'{inFonts}\'')
-                # vFilters.append(f'[out][0:s:{subsTrackIndex}]overlay[out]')
-                # [video][scaledCoverPhoto]overlay=:x=w/2:y=(H-h)/2:enable='between(t,4,21)',subtitles=intro.ass:fontsdir=../../preview/fonts,format=yuv420p,scale=-2:494
+                outsubs = f'subtitles={inpSubsStr}:fontsdir=\'{inFonts}\''
+                if inSubsFile.lower().endswith('.mkv'):
+                    subsData = getVideoData(inFile, f's:{subsTrackIndex}')['streams']
+                    if len(subsData) > 0 and subsData[0]['codec_name'] == 'hdmv_pgs_subtitle':
+                        vFilters = f'{vFilters}[v];[v][0:s:{subsTrackIndex}]overlay'
+                        overlay = True
+                        outsubs = ''
+                if outsubs:
+                    vFilters = f'{vFilters},{outsubs}'
             else:
                 inpSubsStr = f'filename="{inSubsFile}"'
                 if inSubsFile.lower().endswith('.mkv'):
@@ -168,9 +174,11 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
             byWidth = True if int(curVideoSize[0]) / (videoData['width']/videoData['height']) <= int(curVideoSize[1]) else False
             if useFFmpeg:
                 if byWidth:
-                    vFilters.append(f'scale={curVideoSize[0]}:-2')
+                    oscale = f'scale={curVideoSize[0]}:-2'
                 else:
-                    vFilters.append(f'scale=-2:{curVideoSize[1]}')
+                    oscale = f'scale=-2:{curVideoSize[1]}'
+                oscsep = '[v];[v]' if overlay else ','
+                vFilters = f'{vFilters}{oscsep}{oscale}'
             else:
                 if byWidth:
                     encCmd.extend([ '--output-res', f'{curVideoSize[0]}x-2' ])
@@ -178,8 +186,7 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
                     encCmd.extend([ '--output-res', f'-2x{curVideoSize[1]}' ])
         
         if useFFmpeg:
-            vFilters = ','.join(vFilters)
-            encCmd.extend([ '-filter_complex', f'[0:v:0]{vFilters}[outv]', '-map', '[outv]' ])
+            encCmd.extend([ '-filter_complex', vFilters ])
         
         if audioTrackIndex > -1:
             if useFFmpeg:
@@ -259,9 +266,10 @@ def configEncode(inputPath: Path):
     if len(audioData) > 0:
         for t in range(len(audioData)):
             a = audioData[t]
+            codec = a['codec_name']
             lang = a['tags']['language']
             title = a['tags']['title'] if 'title' in a['tags'] else ''
-            print(f'[{t}] {lang} {title}')
+            print(f'[{t}] {codec} {lang} {title}')
     else:
         print(f'[-] No audio')
     
