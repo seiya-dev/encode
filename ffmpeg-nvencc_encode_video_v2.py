@@ -14,31 +14,65 @@ from pathlib import Path
 from pathlib import PurePath
 
 import questionary
-from questionary import Choice, Validator, ValidationError, prompt
+from questionary import Choice, Validator, ValidationError
 
-extFile = ['.mkv', '.mp4', '.mov', '.avs']
+extFile = ['.mkv', '.mp4', '.mov', '.avi', '.avs']
 reName = re.compile(r'^(?P<title>.+?( \d|\(\d+\))?)( -)? (?P<episode>(\d+|SP( )?(\d+)|OVA( )?(\d+)?)(v\d)?)$')
-reClean = re.compile(r'^(\[[^\[\]]*?\]|\([^\(\)]*?\)) | (\[[^\[\]]*?\]|\([^\(\)]*?\))$')
+reClean = re.compile(r'^(\[[^\[\]]*?\]|\([^\(\)]*?\)) | (\[[^\[\]]*?\]|\([^\(\)]*?\))+$')
 
 # int validator
 def IntValidator(text):
     if len(text) == 0:
-        return 'Please enter a value'
+        return False
     try:
         int(text)
     except ValueError:
-        return 'Please enter a value'
+        return False
     return True
 
+# yn bool
+def boolYN(inputStr: str):
+    inputStr = str(inputStr).lower().strip()
+    if len(inputStr) > 0 and inputStr[0] == 'y':
+        return True
+    else:
+        return False
+
 # get data from video file
-def getVideoData(inputVideo: Path, streamType: str):
+def getVideoData(inputVideo: Path, streamType: str, showLog: bool = False):
     result = subprocess.run([
         r'ffprobe', '-v', 'error', '-hide_banner',
         '-print_format', 'json', '-show_format', '-show_streams', 
         '-select_streams', streamType,
         inputVideo
     ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    result = json.loads(result.stdout.decode('utf-8'))
+    result = result.stdout
+    # open text
+    try:
+        result = result.decode('utf-8')
+    except:
+        result = result.decode('ISO-8859-1')
+    lwiCreate = re.search(r'^Creating lwi index file .*', result, flags=re.M)
+    if lwiCreate:
+        print(f'[:info:] LWI Index file created!')
+    if showLog:
+        libassLog = re.findall(r'^libass: .*', result, flags=re.M)
+        if libassLog:
+            print()
+            for i in range(len(libassLog)):
+                print(f'[:info:] {libassLog[i]}')
+        avisynthLog = re.findall(r'^\[avisynth .*', result, flags=re.M)
+        if avisynthLog:
+            print()
+            for i in range(len(avisynthLog)):
+                print(f'[:info:] {avisynthLog[i]}')
+    result = re.sub(r'^Creating lwi index file .*', '', result, flags=re.M)
+    result = re.sub(r'^libass: .*', '', result, flags=re.M)
+    result = re.sub(r'^\[avisynth .*', '', result, flags=re.M)
+    result = re.sub(r'^\w.*', '', result, flags=re.M)
+    result = re.sub(r'^\(.*', '', result, flags=re.M)
+    result = json.loads(result)
+    result = result if 'streams' in result else {'streams':[]}
     return result
 
 # find subs files
@@ -66,15 +100,18 @@ def fixPath(inFile: Path, forFFmpeg: bool):
             inFile = inFile.replace("'", r"'\''")
     return inFile
 
+# encode
 def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio: bool, subsTrackIndex: int, subsFileIndex: int):
     # inFile  = os.path.abspath(inFile)
     inDir   = PurePath(inFile).parent
     inFonts = fixPath(f'{inDir}/fonts', useFFmpeg)
     inSubs  = searchSubsFile(inFile).files
     
-    videoData = getVideoData(inFile, 'v:0')['streams']
-    if len(videoData) < 0:
+    videoData = getVideoData(inFile, 'v:0', True)['streams']
+    if len(videoData) < 1:
+        print()
         print(f':: Skipping: {PurePath(inFile).name}')
+        print(f':: No video streams!')
         return
     
     videoData = videoData[0]
@@ -85,13 +122,15 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
         outVideoSize.append(['1920', '1080'])
     if videoData['width'] >= 1920 or videoData['height'] >= 1080:
         outVideoSize.append(['1280', '720'])
+    # if videoData['width'] >= 1280 or videoData['height'] >= 720:
+    #     outVideoSize.append(['854', '480'])
     
     isGifv = False
-    if os.environ.get('toGifv') != None and os.environ.get('toGifv') == '1':
+    if os.environ.get('FF_toGifv') != None and os.environ.get('FF_toGifv') == '1':
         print('\n:: Convert to GIFV!')
         outVideoSize = [[]]
-        outVideoSize.append([ '512', '512' ])
-        outVideoSize.append([ '848', '480' ])
+        # outVideoSize.append([ '512', '512' ])
+        outVideoSize.append([ '854', '480' ])
         isGifv = True
     
     for x in range(len(outVideoSize)):
@@ -113,13 +152,15 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
         #     input()
         # print(outNameTemp)
         
+        outExt = f'{curVideoSize[1]}'
+        if outExt != 'orig':
+            outExt = f'{outExt}p'
         if m := reName.match(outNameTemp):
             title, episode = m.group('title'), m.group('episode')
             outFolder = f'{outFolder}/{title}'
-            outFile   = f'{title} - {episode} [{curVideoSize[1]}].mp4'
+            outFile   = f'{title} - {episode} [{outExt}].mp4'
         else:
             outFolder = f'{outFolder}'
-            outExt    = f'{curVideoSize[1]}'
             outFile   = f'{PurePath(inFile).stem}-{outExt}-enc.mp4'
         
         os.makedirs(outFolder, exist_ok=True)
@@ -212,7 +253,7 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
             encCmd.extend([ '-sn', outFile ])
         
         if not useFFmpeg and os.path.isfile(outFile):
-            nvOw = askYN(f'\n:: "{PurePath(outFile).name}" already exists! Overwrite? ')
+            nvOw = questionary.confirm(f'\n:: "{PurePath(outFile).name}" already exists! Overwrite? ', default=False).ask()
             if not nvOw:
                 continue
         
@@ -231,7 +272,7 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
         minutes, seconds = divmod(rem, 60)
         print(f'\n:: Encoded {PurePath(outFile).name} in {hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}')
 
-# encode
+# config
 def configEncode(inputPath: Path):
     # filesArr
     inpFile = []
@@ -254,28 +295,33 @@ def configEncode(inputPath: Path):
         return
     
     # useNVEnc
-    useNVEnc = questionary.confirm('Use NVEnc (default=No):', default=False).ask()
+    if os.environ.get('FF_UseNVEnc') != None:
+        useNVEnc = boolYN(os.environ.get('FF_UseNVEnc'))
+    else:
+        useNVEnc = questionary.confirm('Use NVEnc (default=No):', default=False).ask()
     
     # useFFmpeg
     useFFmpeg = (not useNVEnc)
     
     # get audio data from first video
-    audioData = getVideoData(inpFile[0], 'a')['streams']
-    
-    # show tracks
-    print(f'\n:: Audio from first file:')
-    if len(audioData) > 0:
-        for t in range(len(audioData)):
-            a = audioData[t]
-            codec = a['codec_name']
-            lang = a['tags']['language']
-            title = a['tags']['title'] if 'title' in a['tags'] else ''
-            print(f'[{t}] {codec} {lang} {title}')
+    if os.environ.get('FF_AudioTrackIndex') != None and IntValidator(os.environ.get('FF_AudioTrackIndex')):
+        audioTrackIndex = int(os.environ.get('FF_AudioTrackIndex'))
     else:
-        print(f'[-] No audio')
-    
-    # index
-    audioTrackIndex = int(questionary.text('Audio track index (no audio: -1):', default='0', validate=IntValidator).ask())
+        audioData = getVideoData(inpFile[0], 'a')['streams']
+        # show tracks
+        print(f'\n:: Audio from first file:')
+        if len(audioData) > 0:
+            for t in range(len(audioData)):
+                a = audioData[t]
+                codec = a['codec_name']
+                tags = a['tags'] if 'tags' in a else {}
+                lang = tags['language'] if 'language' in tags else ''
+                title = tags['title'] if 'title' in tags else ''
+                print(f'[{t}] {codec} {lang} {title}')
+        else:
+            print(f'[-] No audio')
+        # index
+        audioTrackIndex = int(questionary.text('Audio track index (no audio: -1):', default='0', validate=IntValidator).ask())
     
     if audioTrackIndex < -1:
         audioTrackIndex = -1
@@ -284,9 +330,12 @@ def configEncode(inputPath: Path):
     
     encodeAudio = False
     if audioTrackIndex > -1:
-        print('')
-        encodeAudio = questionary.confirm('Encode audio (default=No):', default=False).ask()
-        print('')
+        if os.environ.get('FF_EncodeAudio') != None:
+            encodeAudio = boolYN(os.environ.get('FF_EncodeAudio'))
+        else:
+            print('')
+            encodeAudio = questionary.confirm('Encode audio (default=No):', default=False).ask()
+            print('')
     
     subsData = searchSubsFile(inpFile[0])
     if len(subsData.files) > 0:
@@ -295,7 +344,10 @@ def configEncode(inputPath: Path):
             print(f'[{t}] {PurePath(subsData.files[t]).name}')
     
     subsFileDefault = '0' if PurePath(inpFile[0]).suffix.lower() == '.mkv' else '-1'
-    subsFileIndex = int(questionary.text('Subtitle file index for hardsubs (-1: Skip):', default=subsFileDefault, validate=IntValidator).ask())
+    if os.environ.get('FF_SubsFileIndex') != None and IntValidator(os.environ.get('FF_SubsFileIndex')):
+        subsFileIndex = int(os.environ.get('FF_SubsFileIndex'))
+    else:
+        subsFileIndex = int(questionary.text('Subtitle file index for hardsubs (-1: Skip):', default=subsFileDefault, validate=IntValidator).ask())
     
     if subsFileIndex < -1:
         subsFileIndex = -1
@@ -304,17 +356,20 @@ def configEncode(inputPath: Path):
     
     subsTrackIndex = 0
     if PurePath(inpFile[0]).suffix.lower() == '.mkv' and subsFileIndex == 0:
-        subsData = getVideoData(inpFile[0], 's')['streams']
-        print(f'\n:: Subtitles from first file:')
-        if len(subsData) > 0:
-            for t in range(len(subsData)):
-                s = subsData[t]
-                lang = s['tags']['language']
-                title = s['tags']['title'] if 'title' in s['tags'] else ''
-                print(f'[{t}] {lang} {title}')
+        if os.environ.get('FF_SubsTrackIndex') != None and IntValidator(os.environ.get('FF_SubsTrackIndex')):
+            subsTrackIndex = int(os.environ.get('FF_SubsTrackIndex'))
         else:
-            print(f'[-] No subtitles')
-        subsTrackIndex = int(questionary.text('Subtitle track index for hardsubs (-1: Skip):', default='0', validate=IntValidator).ask())
+            subsData = getVideoData(inpFile[0], 's')['streams']
+            print(f'\n:: Subtitles from first file:')
+            if len(subsData) > 0:
+                for t in range(len(subsData)):
+                    s = subsData[t]
+                    lang = s['tags']['language'] if 'language' in s['tags'] else 'unk'
+                    title = s['tags']['title'] if 'title' in s['tags'] else ''
+                    print(f'[{t}] {lang} {title}')
+            else:
+                print(f'[-] No subtitles')
+            subsTrackIndex = int(questionary.text('Subtitle track index for hardsubs (-1: Skip):', default='0', validate=IntValidator).ask())
         if subsTrackIndex < -1:
             subsTrackIndex = -1
         if subsTrackIndex > 1000:
@@ -346,7 +401,6 @@ elif os.path.isdir(inputPath):
     configEncode(inputPath)
 else:
     print(f':: Input path is not a folder or video file: {inputPath}')
-
 
 # end
 if os.environ.get('isBatch') is None:
