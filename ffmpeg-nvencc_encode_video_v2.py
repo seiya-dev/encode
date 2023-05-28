@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#! /usr/bin/env python
 
 # set libs
 import sys
@@ -115,15 +115,13 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
         return
     
     videoData = videoData[0]
-    outVideoSize = [[ str(videoData['width']), 'orig' ]]
+    outVideoSize = [[ str(videoData['width']), str(videoData['height']) ]]
     audioBitrate = '192'
     
     if videoData['width'] >= 2560 or videoData['height'] >= 1440:
         outVideoSize.append(['1920', '1080'])
     if videoData['width'] >= 1920 or videoData['height'] >= 1080:
         outVideoSize.append(['1280', '720'])
-    # if videoData['width'] >= 1280 or videoData['height'] >= 720:
-    #     outVideoSize.append(['854', '480'])
     
     isGifv = False
     if os.environ.get('FF_toGifv') != None and os.environ.get('FF_toGifv') == '1':
@@ -146,15 +144,7 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
             outNameTemp = re.sub(reClean, '', outNameTemp)
             reMatchClean = re.search(reClean, outNameTemp)
         
-        # if m := reName.match(outNameTemp):
-        #     title, episode = m.group('title'), m.group('episode')
-        #     print(f'{title} - {episode}')
-        #     input()
-        # print(outNameTemp)
-        
-        outExt = f'{curVideoSize[1]}'
-        if outExt != 'orig':
-            outExt = f'{outExt}p'
+        outExt = f'{curVideoSize[1]}p'
         if m := reName.match(outNameTemp):
             title, episode = m.group('title'), m.group('episode')
             outFolder = f'{outFolder}/{title}'
@@ -199,12 +189,14 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
                 outsubs = f'subtitles={inpSubsStr}:fontsdir=\'{inFonts}\''
                 if inSubsFile.lower().endswith('.mkv'):
                     subsData = getVideoData(inFile, f's:{subsTrackIndex}')['streams']
+                    # if len(subsData) > 0 and subsData[0]['codec_name'] == 'dvd_subtitle':
                     if len(subsData) > 0 and subsData[0]['codec_name'] == 'hdmv_pgs_subtitle':
                         vFilters = f'{vFilters}[v];[v][0:s:{subsTrackIndex}]overlay'
                         overlay = True
                         outsubs = ''
-                if outsubs:
-                    vFilters = f'{vFilters},{outsubs}'
+            
+            if outsubs:
+                vFilters = f'{vFilters},{outsubs}'
             else:
                 inpSubsStr = f'filename="{inSubsFile}"'
                 if inSubsFile.lower().endswith('.mkv'):
@@ -212,23 +204,26 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
                     inSubsLog = inSubsLog + f':track={subsTrackIndex + 1}'
                 encCmd.extend([ '--vpp-subburn', f'{inpSubsStr},fontsdir="{inFonts}"' ])
         
+        cVS = curVideoSize
+        vDS = videoData['width'] / videoData['height']
+        
         if x > 0:
-            byWidth = True if int(curVideoSize[0]) / (videoData['width']/videoData['height']) <= int(curVideoSize[1]) else False
+            byWidth = True if int(cVS[0]) / vDS <= int(cVS[1]) else False
             if useFFmpeg:
                 if byWidth:
-                    oscale = f'scale={curVideoSize[0]}:-2'
+                    oscale = f'scale={cVS[0]}:-2'
                 else:
-                    oscale = f'scale=-2:{curVideoSize[1]}'
+                    oscale = f'scale=-2:{cVS[1]}'
                 oscsep = '[v];[v]' if overlay else ','
                 vFilters = f'{vFilters}{oscsep}{oscale}'
             else:
                 if byWidth:
-                    encCmd.extend([ '--output-res', f'{curVideoSize[0]}x-2' ])
+                    encCmd.extend([ '--output-res', f'{cVS[0]}x-2' ])
                 else:
-                    encCmd.extend([ '--output-res', f'-2x{curVideoSize[1]}' ])
+                    encCmd.extend([ '--output-res', f'-2x{cVS[1]}' ])
         
         if useFFmpeg:
-            encCmd.extend([ '-filter_complex', vFilters ])
+            encCmd.extend([ '-filter_complex', f'{vFilters}' ])
         
         if audioTrackIndex > -1:
             if useFFmpeg:
@@ -364,8 +359,9 @@ def configEncode(inputPath: Path):
             if len(subsData) > 0:
                 for t in range(len(subsData)):
                     s = subsData[t]
-                    lang = s['tags']['language'] if 'language' in s['tags'] else 'unk'
-                    title = s['tags']['title'] if 'title' in s['tags'] else ''
+                    s_tags = s['tags'] if 'tags' in s else {}
+                    lang = s_tags['language'] if 'language' in s_tags else 'unk'
+                    title = s_tags['title'] if 'title' in s_tags else ''
                     print(f'[{t}] {lang} {title}')
             else:
                 print(f'[-] No subtitles')
