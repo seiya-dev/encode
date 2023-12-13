@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 
 # set libs
 import sys
@@ -123,17 +123,7 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
     if videoData['width'] >= 1920 or videoData['height'] >= 1080:
         outVideoSize.append(['1280', '720'])
     
-    isGifv = False
-    if os.environ.get('FF_toGifv') != None and os.environ.get('FF_toGifv') == '1':
-        print('\n:: Convert to GIFV!')
-        outVideoSize = [[]]
-        # outVideoSize.append([ '512', '512' ])
-        outVideoSize.append([ '854', '480' ])
-        isGifv = True
-    
     for x in range(len(outVideoSize)):
-        if isGifv and x < 1:
-            continue
         
         outFolder = inDir
         outNameTemp = PurePath(inFile).stem
@@ -189,8 +179,8 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
                 outsubs = f'subtitles={inpSubsStr}:fontsdir=\'{inFonts}\''
                 if inSubsFile.lower().endswith('.mkv'):
                     subsData = getVideoData(inFile, f's:{subsTrackIndex}')['streams']
-                    # if len(subsData) > 0 and subsData[0]['codec_name'] == 'dvd_subtitle':
-                    if len(subsData) > 0 and subsData[0]['codec_name'] == 'hdmv_pgs_subtitle':
+                    subsCodec = subsData[0]['codec_name']
+                    if len(subsData) > 0 and (subsCodec == 'dvd_subtitle' or subsCodec == 'hdmv_pgs_subtitle'):
                         vFilters = f'{vFilters}[v];[v][0:s:{subsTrackIndex}]overlay'
                         overlay = True
                         outsubs = ''
@@ -201,7 +191,7 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
                 inpSubsStr = f'filename="{inSubsFile}"'
                 if inSubsFile.lower().endswith('.mkv'):
                     inpSubsStr = f'track={subsTrackIndex + 1}'
-                    inSubsLog = inSubsLog + f':track={subsTrackIndex + 1}'
+            if not useFFmpeg:
                 encCmd.extend([ '--vpp-subburn', f'{inpSubsStr},fontsdir="{inFonts}"' ])
         
         cVS = curVideoSize
@@ -360,12 +350,14 @@ def configEncode(inputPath: Path):
                 for t in range(len(subsData)):
                     s = subsData[t]
                     s_tags = s['tags'] if 'tags' in s else {}
+                    codec = s['codec_name'] if 'codec_name' in s else ''
                     lang = s_tags['language'] if 'language' in s_tags else 'unk'
                     title = s_tags['title'] if 'title' in s_tags else ''
-                    print(f'[{t}] {lang} {title}')
+                    print(f'[{t}] {lang} {title} #{codec}')
             else:
                 print(f'[-] No subtitles')
             subsTrackIndex = int(questionary.text('Subtitle track index for hardsubs (-1: Skip):', default='0', validate=IntValidator).ask())
+        
         if subsTrackIndex < -1:
             subsTrackIndex = -1
         if subsTrackIndex > 1000:
