@@ -170,7 +170,7 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
             if subsFileIndex > len(inSubs):
                 subsFileIndex = len(inSubs) - 1
             inSubsFile = fixPath(inSubs[subsFileIndex], useFFmpeg)
-            inSubsLog  = str(inSubs[subsFileIndex]).replace(f'{str(inDir)}{os.path.sep}', '')
+            inSubsLog = str(inSubs[subsFileIndex]).replace(f'{str(inDir)}{os.path.sep}', '')
             if useFFmpeg:
                 inpSubsStr = f'filename=\'{inSubsFile}\''
                 if inSubsFile.lower().endswith('.mkv'):
@@ -179,20 +179,25 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
                 outsubs = f'subtitles={inpSubsStr}:fontsdir=\'{inFonts}\''
                 if inSubsFile.lower().endswith('.mkv'):
                     subsData = getVideoData(inFile, f's:{subsTrackIndex}')['streams']
-                    subsCodec = subsData[0]['codec_name']
-                    if len(subsData) > 0 and (subsCodec == 'dvd_subtitle' or subsCodec == 'hdmv_pgs_subtitle'):
-                        vFilters = f'{vFilters}[v];[v][0:s:{subsTrackIndex}]overlay'
-                        overlay = True
-                        outsubs = ''
+                    if len(subsData) == 0:
+                        inSubs = list()
+                        inSubsLog = ''
+                    if len(subsData) > 0:
+                        subsCodec = subsData[0]['codec_name']
+                        if subsCodec == 'dvd_subtitle' or subsCodec == 'hdmv_pgs_subtitle':
+                            vFilters = f'{vFilters}[v];[v][0:s:{subsTrackIndex}]overlay'
+                            overlay = True
+                            outsubs = ''
             
-            if outsubs:
-                vFilters = f'{vFilters},{outsubs}'
-            else:
-                inpSubsStr = f'filename="{inSubsFile}"'
-                if inSubsFile.lower().endswith('.mkv'):
-                    inpSubsStr = f'track={subsTrackIndex + 1}'
-            if not useFFmpeg:
-                encCmd.extend([ '--vpp-subburn', f'{inpSubsStr},fontsdir="{inFonts}"' ])
+            if len(inSubs) > 0:
+                if outsubs:
+                    vFilters = f'{vFilters},{outsubs}'
+                else:
+                    inpSubsStr = f'filename="{inSubsFile}"'
+                    if inSubsFile.lower().endswith('.mkv'):
+                        inpSubsStr = f'track={subsTrackIndex + 1}'
+                if not useFFmpeg:
+                    encCmd.extend([ '--vpp-subburn', f'{inpSubsStr},fontsdir="{inFonts}"' ])
         
         cVS = curVideoSize
         vDS = videoData['width'] / videoData['height']
