@@ -123,6 +123,10 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
     if videoData['width'] >= 1920 or videoData['height'] >= 1080:
         outVideoSize.append(['1280', '720'])
     
+    if os.environ.get('FF_Encode720') != None:
+        outVideoSize = [['', '']]
+        outVideoSize.append(['1280', '720'])
+    
     for x in range(len(outVideoSize)):
         
         outFolder = inDir
@@ -141,7 +145,7 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
             outFile   = f'{title} - {episode} [{outExt}].mp4'
         else:
             outFolder = f'{outFolder}'
-            outFile   = f'{PurePath(inFile).stem}-{outExt}-enc.mp4'
+            outFile   = f'{PurePath(inFile).stem} [{outExt}].mp4'
         
         os.makedirs(outFolder, exist_ok=True)
         outFile = os.path.abspath(f'{outFolder}/{outFile}')
@@ -255,7 +259,8 @@ def encodeFile(inFile: Path, useFFmpeg: bool, audioTrackIndex: int, encodeAudio:
         
         # print(vFilters)
         # print('\n  '.join(encCmd) + '\n')
-        subprocess.call(encCmd)
+        if curVideoSize[0].isdigit() and curVideoSize[1].isdigit():
+            subprocess.call(encCmd)
         
         runTime = time.monotonic() - startTime
         hours, rem = divmod(runTime, 3600)
@@ -294,7 +299,7 @@ def configEncode(inputPath: Path):
     useFFmpeg = (not useNVEnc)
     
     # get audio data from first video
-    if os.environ.get('FF_AudioTrackIndex') != None and IntValidator(os.environ.get('FF_AudioTrackIndex')):
+    if os.environ.get('FF_AudioTrackIndex') != None and os.environ.get('FF_AudioTrackIndex').isdigit():
         audioTrackIndex = int(os.environ.get('FF_AudioTrackIndex'))
     else:
         audioData = getVideoData(inpFile[0], 'a')['streams']
@@ -304,10 +309,11 @@ def configEncode(inputPath: Path):
             for t in range(len(audioData)):
                 a = audioData[t]
                 codec = a['codec_name']
+                channels = a['channels']
                 tags = a['tags'] if 'tags' in a else {}
                 lang = tags['language'] if 'language' in tags else ''
                 title = tags['title'] if 'title' in tags else ''
-                print(f'[{t}] {codec} {lang} {title}')
+                print(f'[{t}] {codec} {channels}ch {lang} {title}')
         else:
             print(f'[-] No audio')
         # index
@@ -334,7 +340,7 @@ def configEncode(inputPath: Path):
             print(f'[{t}] {PurePath(subsData.files[t]).name}')
     
     subsFileDefault = '0' if PurePath(inpFile[0]).suffix.lower() == '.mkv' else '-1'
-    if os.environ.get('FF_SubsFileIndex') != None and IntValidator(os.environ.get('FF_SubsFileIndex')):
+    if os.environ.get('FF_SubsFileIndex') != None and os.environ.get('FF_SubsFileIndex').isdigit():
         subsFileIndex = int(os.environ.get('FF_SubsFileIndex'))
     else:
         subsFileIndex = int(questionary.text('Subtitle file index for hardsubs (-1: Skip):', default=subsFileDefault, validate=IntValidator).ask())
@@ -346,7 +352,7 @@ def configEncode(inputPath: Path):
     
     subsTrackIndex = 0
     if PurePath(inpFile[0]).suffix.lower() == '.mkv' and subsFileIndex == 0:
-        if os.environ.get('FF_SubsTrackIndex') != None and IntValidator(os.environ.get('FF_SubsTrackIndex')):
+        if os.environ.get('FF_SubsTrackIndex') != None and os.environ.get('FF_SubsTrackIndex').isdigit():
             subsTrackIndex = int(os.environ.get('FF_SubsTrackIndex'))
         else:
             subsData = getVideoData(inpFile[0], 's')['streams']
