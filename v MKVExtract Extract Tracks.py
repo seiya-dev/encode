@@ -1,35 +1,40 @@
 #!/usr/bin/env python3
 
 # set libs
-import sys
 import os
 import re
+import sys
+import json
+import time
+import subprocess
 
 from pathlib import Path
 from pathlib import PurePath
 
-import time
-import subprocess
-import json
+try:
+    import questionary
+    from questionary import Choice, Validator, ValidationError
+except ModuleNotFoundError:
+    print(':: Please install "questionary" module: pip install questionary')
+    input(':: Press enter to continue...\n')
+    exit()
+
+from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
+from _encHelper import getMediaData, getMKVData, audioTitle, searchSubsFile
 
 def extractFile(file: Path):
     # get mkv data
-    result = subprocess.run([
-        'mkvmerge',
-        '-J',
-        file,
-    ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    result = getMKVData(file)
     # parse mkv results
-    result = json.loads(result.stdout.decode('utf-8'))
     mkvfile = PurePath(result['file_name']).stem
     outdir  = PurePath(result['file_name']).parent
     # print filename
     print(f'\n:: FILE: {mkvfile}.mkv')
     # set ids
     countTr = { 'video': 0, 'audio': 0, 'subtitles': 0 }
-    namesTr = []
-    trackTp = {}
-    trackNm = {}
+    namesTr = list()
+    trackTp = dict()
+    trackNm = dict()
     # list tracks
     if 'tracks' in result:
         for t in result['tracks']:
@@ -105,7 +110,8 @@ def extractFile(file: Path):
             trackExt = 'srt'
         # do extract
         output = os.path.join(outdir, f'{PurePath(file).stem}_track{trackIndexNum+1}.{trackExt}')
-        subprocess.call(['mkvextract', '--ui-language', 'en', 'tracks', file, f'{trackIndexNum}:{output}'])
+        mkvExtractCmd = ['mkvextract', '--ui-language', 'en', 'tracks', file, f'{trackIndexNum}:{output}']
+        subprocess.run(mkvExtractCmd)
     if isFile == True:
         extractFile(file)
 
@@ -122,20 +128,25 @@ trackIndex = None
 
 # set folder
 if len(sys.argv) < 2:
-    inputPath = input(':: Folder/File: ')
+    inputPath = questionary.text(':: Folder: ', validate=PathValidator).ask()
+    inputPath = inputPath.strip('\"')
 else:
     inputPath = sys.argv[1]
 
 # check path
-if not os.path.isdir(inputPath):
-    if os.path.isfile(inputPath) and PurePath(inputPath).suffix.lower() == '.mkv':
-        isFile = True
-        extractFile(inputPath)
+try:
+    if not os.path.isdir(inputPath):
+        if os.path.isfile(inputPath) and PurePath(inputPath).suffix.lower() == '.mkv':
+            isFile = True
+            extractFile(inputPath)
+        else:
+            print(f':: Path is not a mkv file or folder: "{inputPath}"!')
     else:
-        print(f':: Path is not a mkv file or folder: "{inputPath}"!')
-else:
-    extractFolder(inputPath)
+        extractFolder(inputPath)
+except Exception as err:
+    print(f':: Something goes wrong...')
+    print(f':: {type(err).__name__}: {err}')
 
 # end
 if os.environ.get('isBatch') is None:
-    input('\n:: Press any key to continue...\n')
+    questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()
