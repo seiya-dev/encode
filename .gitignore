@@ -1,2 +1,5 @@
 .avs-examples
 .presets
+*.dll
+
+!RT_Stats_x64.dll

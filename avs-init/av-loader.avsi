@@ -1,16 +1,19 @@
-# LoadPlugin(
-#     \ "./av-plugins/BestSource.dll",
-#     \ "./av-plugins/LSMASHSource.dll",
-#     \ "./av-plugins/ffms2.dll",
-#     \ "./av-plugins/assrender.dll",
-#     \ "./av-plugins/VSFilter.dll",
-#     \ "./av-plugins/SubImageFile.dll",
-#     \ "./av-plugins/avsresize.dll",
-#     \ "./av-plugins/masktools2.dll",
-#     \ "./av-plugins/PropToClip.dll",
-#     \ "./av-plugins/GetSystemEnv_x64.dll"
-#     \ )
+# Do LoadPluginList
+function LoadPluginList(string txtlist){
+    fileList = RT_ReadTxtFromFile(txtlist)
+    fileListLen = RT_TxtQueryLines(fileList)
+    for(i = 0, fileListLen - 1){
+        filePath = RT_TxtGetLine(fileList, i)
+        if(filePath != "" && LeftStr(filePath, 1) != "#" && Exist(filePath)){
+            fileType = RT_GetFileExtension(filePath)
+            fileType == ".avs"  ? Import(filePath)     : NOP
+            fileType == ".avsi" ? Import(filePath)     : NOP
+            fileType == ".dll"  ? LoadPlugin(filePath) : NOP
+        }
+    }
+    return last
+}
 
-# Import("./av-scripts/.avsi")
-Import("./av-scripts/av-videofx.avsi")
-Import("./av-scripts/psp-resize.avsi")
+# Do LoadPlugins
+LoadPlugin("./av-plugins/RT_Stats_x64.dll")
+LoadPluginList("./av-loader.txt")
