@@ -1,5 +1,6 @@
 .avs-examples
 .presets
+__pycache__
 *.dll
 
 !RT_Stats_x64.dll
