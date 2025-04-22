@@ -27,3 +27,4 @@
 ./av-scripts/av-videofx.avsi
 ./av-scripts/psp-resize.avsi
 ./av-scripts/downmix-megui.avsi
+./av-scripts/img-loader.avsi

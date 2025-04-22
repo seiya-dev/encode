@@ -68,6 +68,9 @@ def configFile(inFile: Path):
     mp4box.extend(['-tmp', tempPath])
     mp4box.extend(['-brand', 'mp42'])
     # mp4box.extend(['-ab', 'iso2', '-ab', 'mp41', '-ab', 'isom'])
+    # mp4box.extend(['--mpeg4-comp-brand', 'mp42,iso6,isom,msdh,dby1'])
+    # mp4box.extend(['--dv-profile', '8'])
+    # mp4box.extend(['--dv-bl-compatible-id', '6'])
     
     if inputTypesVideo.count(fileExt) > 0:
         mp4box.extend(['-add', f'{inFile}#video{videoFPS}{videoTitle}' ])

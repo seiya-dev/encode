@@ -50,6 +50,9 @@ def cutFile(inPath: Path):
     inFName = os.path.join(inDir, PurePath(inFile).stem)
     # -type [aac/ac3/mp3/mp2/mpa/wav/dts/dtswav/ddwav]
     
+    # besplit -core( -type aac -input "file.aac" -output "file_cut.aac" )
+    # besplit -core( -type mp3 -input "file.mp3" -output "file_cut.mp3" ) -split( 952.95200 957.41479 )
+    
     splCmd = [
         r'besplit',
         '-core(', '-input', f'{inFile}', '-prefix', f'{inFName}-new', '-type', 'aac', '-a', ')',

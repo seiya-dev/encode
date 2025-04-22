@@ -53,7 +53,6 @@ function ASSSource(clip video, string source_file, string "source_dir", string "
     return video
 }
 
-
 function lw(string media_file, string "source_dir", string "cache_dir", bool "cache", int "atrack", int_array "framerate", string "vformat"){
     source_dir = Defined(source_dir) ? source_dir : setGlobPath("glob_source_dir")
     cache_dir = Defined(cache_dir) ? cache_dir : setGlobPath("glob_cache_dir")
