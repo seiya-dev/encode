@@ -20,40 +20,19 @@ except ModuleNotFoundError:
     exit()
 
 try:
-    import _apngParser as APNG
-    from _encHelper import PathValidator
+    from _encHelper import PathValidator, parse_apng, create_img, trim_img
 except ModuleNotFoundError:
     print(':: Encode Helper or APNG Parser is MISSING...')
     qpause(message = ':: Press enter to continue...\n').ask()
     exit()
 
-def create_png(width, height):
-    return Image.new('RGBA', (width, height), (0, 0, 0, 0))
-
-def trim_image(img, threshold=19):
-    # Get the alpha channel (transparency)
-    alpha = img.getchannel('A')
-    alpha_np = np.array(alpha)
-    
-    # Create a mask where alpha is above the threshold
-    mask = alpha_np > int(threshold / 100 * 255)
-    if not np.any(mask):
-        return img, (0, 0)
-
-    # Get the bounding box of the non-transparent region
-    coords = np.argwhere(mask)
-    y0, x0 = coords.min(axis=0)
-    y1, x1 = coords.max(axis=0) + 1  # slices are exclusive
-    trimmed_img = img.crop((x0, y0, x1, y1))
-    return trimmed_img, (x0, y0)
-
 def configFile(inFile: Path):
     # Open the PNG image
     print(f':: Processing: {inFile}')
-    outDir = inFile.replace('.png', '')
+    outPath = inFile.replace('.png', '')
     
     data = open(inFile, 'rb').read()
-    apng = APNG.apng_disassemble(data)
+    apng = parse_apng(data)
     apng.play_time_sec = apng.play_time / 1000
     apng.frame_cnt = len(apng.frames)
     
@@ -62,12 +41,12 @@ def configFile(inFile: Path):
     print(f'NumPlays : {apng.num_plays}')
     print(f'Frames   : {apng.frame_cnt}')
     
-    os.makedirs(outDir, exist_ok=True)
+    os.makedirs(outPath, exist_ok=True)
     
-    merged = create_png(apng.width, apng.height)
+    merged = create_img(apng.width, apng.height)
     
     for i, frame in enumerate(apng.frames):
-        # frame.data.save(f'{outDir}/frame_{i:04}.png')
+        # frame.data.save(f'{outPath}/frame_{i:04}.png')
         merged = Image.alpha_composite(merged, frame.data)
     
     # cleanup
@@ -75,12 +54,12 @@ def configFile(inFile: Path):
     alpha_mask = rgba[:, :, 3] < 49
     rgba[alpha_mask] = [0, 0, 0, 0]
     merged = Image.fromarray(rgba, mode='RGBA')
-    # merged.save(f'{outDir}/merged.png')
+    # merged.save(f'{outPath}/merged.png')
     
     # trim frames
-    trim_img, (offset_x, offset_y) = trim_image(merged, threshold=19)
-    print(f'TrimData : {trim_img.width}x{trim_img.height}+{offset_x}+{offset_y}')
-    cropData = (offset_x, offset_y, trim_img.width + offset_x, trim_img.height + offset_y)
+    trimmed_img, (offset_x, offset_y) = trim_img(merged, threshold=19)
+    print(f'TrimData : {trimmed_img.width}x{trimmed_img.height}+{offset_x}+{offset_y}')
+    cropData = (offset_x, offset_y, trimmed_img.width + offset_x, trimmed_img.height + offset_y)
     
     # prep avs script
     avsTemplate = ''
@@ -88,47 +67,19 @@ def configFile(inFile: Path):
     # save cropped frames
     for i, frame in enumerate(apng.frames):
         frame.data = frame.data.crop(cropData)
-        frame.data.save(f'{outDir}/frame_{i+1:04}.png')
-        print(frame.delay_ms)
+        frame.data.save(f'{outPath}/frame_{i+1:04}.png')
+        avsFunc = f'LoadFrameImage("./{Path(outPath).name}/frame_{i+1:04}.png", {frame.delay_den}, {frame.delay_num})\n'
+        if i == 0:
+            avsTemplate += f'v =     {avsFunc}'
+        else:
+            avsTemplate += f'v = v + {avsFunc}'
     
-    """
-    img = Image.open(inFile).convert('RGBA')
-
-    # Check if the image has 4 channels (RGBA)
-    if img.mode != 'RGBA':
-        print(':: ERROR: Only 4-channel (RGBA) PNG accepted!')
-        return
-
-    # Convert the image to a NumPy array for manipulation
-    rgba = np.array(img)
-
-    # Zero out pixels with alpha < 49
-    alpha_mask = rgba[:, :, 3] < 49
-    rgba[alpha_mask] = [0, 0, 0, 0]
-
-    # Create the cleaned image
-    cleaned_img = Image.fromarray(rgba, mode='RGBA')
-
-    # Trim the transparent edges
-    trimmed_img, (offset_x, offset_y) = trim_transparent_edges(cleaned_img, threshold=19)
-    
-    # Log the original and trimmed sizes
-    src_size = f'{img.width}x{img.height}'
-    trim_size = f'{trimmed_img.width}x{trimmed_img.height}+{offset_x}+{offset_y}'
-    print(f':: TRIM: {src_size} => {trim_size}')
-
-    # Save the trimmed PNG
-    trim_path = str(inFile).replace('.png', '_trim.png')
-    trimmed_img.save(trim_path)
-    print(f':: Trimmed PNG: {trim_path}')
-    
-    # Create a WebP version if the image is large
-    if trimmed_img.width > 512 or trimmed_img.height > 512:
-        webp_path = str(inFile).replace('.png', '_webp_512.webp')
-        trimmed_img = trimmed_img.resize((512, 512), Image.Resampling.LANCZOS)
-        trimmed_img.save(webp_path, 'WEBP', lossless=True)
-        print(f':: Converted WebP: {webp_path}')
-    """
+    # save avs script
+    avsTemplate += 'last = v\n'
+    avsTemplate += 'ConvertToPlanarRGBA()\n'
+    avsTemplate += 'videoAddPadMod2()\n'
+    avsTemplate += 'ConvertToYUV420()\n'
+    open(f'{outPath}.avs', 'w', encoding='utf-8').write(avsTemplate)
 
 # folder
 def configFolder(inPath: Path):
@@ -152,7 +103,7 @@ else:
 
 # to abs path
 inputPath = os.path.abspath(inputPath)
-extList = ['.png']
+extList = ['.apng', '.png']
 
 # check path
 try:

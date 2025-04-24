@@ -20,28 +20,11 @@ except ModuleNotFoundError:
     exit()
 
 try:
-    from _encHelper import PathValidator
+    from _encHelper import PathValidator, trim_img
 except ModuleNotFoundError:
     print(':: Encode Helper is MISSING...')
     qpause(message = ':: Press enter to continue...\n').ask()
     exit()
-
-def trim_transparent_edges(img, threshold=19):
-    # Get the alpha channel (transparency)
-    alpha = img.getchannel('A')
-    alpha_np = np.array(alpha)
-    
-    # Create a mask where alpha is above the threshold
-    mask = alpha_np > int(threshold / 100 * 255)
-    if not np.any(mask):
-        return img, (0, 0)
-
-    # Get the bounding box of the non-transparent region
-    coords = np.argwhere(mask)
-    y0, x0 = coords.min(axis=0)
-    y1, x1 = coords.max(axis=0) + 1  # slices are exclusive
-    trimmed_img = img.crop((x0, y0, x1, y1))
-    return trimmed_img, (x0, y0)
 
 def configFile(inFile: Path):
     # Open the PNG image
@@ -64,7 +47,7 @@ def configFile(inFile: Path):
     cleaned_img = Image.fromarray(rgba, mode='RGBA')
 
     # Trim the transparent edges
-    trimmed_img, (offset_x, offset_y) = trim_transparent_edges(cleaned_img, threshold=19)
+    trimmed_img, (offset_x, offset_y) = trim_img(cleaned_img, threshold=19)
     
     # Log the original and trimmed sizes
     src_size = f'{img.width}x{img.height}'
