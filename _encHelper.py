@@ -253,6 +253,64 @@ def trim_img(img, threshold=19):
     trimmed_img = img.crop((x0, y0, x1, y1))
     return trimmed_img, (x0, y0)
 
+# png header
+PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
+class NotPNGError(Exception): pass
+class NotAPNGError(Exception): pass
+def is_not_png(err): return isinstance(err, NotPNGError)
+def is_not_apng(err): return isinstance(err, NotAPNGError)
+
+# iphone png to standart png
+def strip_cgbi_and_fix_png(buffer: bytes, remove_alpha_premult: bool = True) -> bytes:
+    if buffer[:8] != PNG_SIGNATURE:
+        raise NotPNGError('Not a PNG')
+    
+    # check CgBI chunk
+    offset = 8
+    chunks = []
+    is_cgbi_png = False
+    while offset < len(buffer):
+        length = struct.unpack('>I', buffer[offset:offset + 4])[0]
+        chunk_type = buffer[offset + 4:offset + 8]
+        if chunk_type != b'CgBI':
+            chunks.append(buffer[offset:offset + 12 + length])
+        else:
+            is_cgbi_png = True
+        offset += 12 + length
+        if chunk_type == b'IEND':
+            break
+    
+    # not iphone png
+    if not is_cgbi_png:
+        return buffer
+    
+    # Rebuild PNG without CgBI
+    rebuilt_png = PNG_SIGNATURE + b''.join(chunks)
+    
+    # Load image from memory buffer
+    with io.BytesIO(rebuilt_png) as img_buffer:
+        img = Image.open(img_buffer)
+        img = img.convert('RGBA')
+    
+    # Process pixels
+    arr = np.array(img)
+    arr = arr[..., [2, 1, 0, 3]]  # Swap BGR -> RGB
+    if remove_alpha_premult:
+        alpha = arr[..., 3:4]
+        nonzero_alpha = alpha != 0
+        
+        rgb = arr[..., :3]
+        adjusted_rgb = (
+            (rgb[nonzero_alpha] * 255 + alpha[nonzero_alpha] // 2) // alpha[nonzero_alpha]
+        )
+        arr[..., :3][nonzero_alpha] = np.clip(adjusted_rgb, 0, 255)
+
+    # Save image back to Image
+    output_buffer = io.BytesIO()
+    final_img = Image.fromarray(arr.astype('uint8'), 'RGBA')
+    final_img.save(output_buffer, format='PNG')
+    return final_img
+
 # apng structure
 class APNG:
     def __init__(self):
@@ -276,12 +334,6 @@ class APNGFrame:
 
 # apng parser
 def parse_apng(buffer: bytes) -> APNG:
-    class NotPNGError(Exception): pass
-    class NotAPNGError(Exception): pass
-    def is_not_png(err): return isinstance(err, NotPNGError)
-    def is_not_apng(err): return isinstance(err, NotAPNGError)
-    
-    PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
     if buffer[:8] != PNG_SIGNATURE:
         raise NotPNGError('Not a PNG')
     
