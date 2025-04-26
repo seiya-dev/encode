@@ -4,7 +4,7 @@ vEpName = "[RelGroup] Title - 01 (BD 1080p x265 10-bit FLAC) [00000000].mkv"
 global glob_cache_dir  = vFolder
 global glob_source_dir = vFolder
 
-bs(vEpName04 + ".mkv", atrack=2)
+bs(vEpName + ".mkv", atrack=1)
 ConvertBits(16)
 v = last
 

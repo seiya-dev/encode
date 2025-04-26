@@ -23,8 +23,10 @@ function setGlobPath(string glob_path_name, string "default_path"){
     }
 }
 
-function bs(string media_file, string "source_dir", int "atrack", int_array "framerate", string "vformat"){
+function bs(string media_file, string "source_dir", string "cache_dir", int "atrack", int_array "framerate", string "vformat"){
     source_dir = Defined(source_dir) ? source_dir : setGlobPath("glob_source_dir")
+    cache_dir = Defined(cache_dir) ? cache_dir : setGlobPath("glob_cache_dir")
+    cachepath = cache_dir + media_file
     
     atrack = Default(atrack, -1)
     framerate = Default(framerate, [0, 1])
@@ -34,7 +36,8 @@ function bs(string media_file, string "source_dir", int "atrack", int_array "fra
         \ atrack = atrack,
         \ fpsnum = framerate[0],
         \ fpsden = framerate[1],
-        \ cachemode = 4
+        \ cachemode = 4,
+        \ cachepath = cachepath
         \ )
     
     return v
