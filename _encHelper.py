@@ -253,32 +253,33 @@ def trim_img(img, threshold=19):
     trimmed_img = img.crop((x0, y0, x1, y1))
     return trimmed_img, (x0, y0)
 
+# apng structure
+class APNG:
+    def __init__(self):
+        self.width = 0
+        self.height = 0
+        self.num_plays = 0
+        self.play_time = 0
+        self.frames: List[Frame] = []
+class APNGFrame:
+    def __init__(self):
+        self.left = 0
+        self.top = 0
+        self.width = 0
+        self.height = 0
+        self.delay_num = 0
+        self.delay_den = 100
+        self.delay_ms = 0
+        self.disposeOp = 0
+        self.blendOp = 0
+        self.data = None
+
 # apng parser
 def parse_apng(buffer: bytes) -> APNG:
     class NotPNGError(Exception): pass
     class NotAPNGError(Exception): pass
     def is_not_png(err): return isinstance(err, NotPNGError)
     def is_not_apng(err): return isinstance(err, NotAPNGError)
-    
-    class APNG:
-        def __init__(self):
-            self.width = 0
-            self.height = 0
-            self.num_plays = 0
-            self.play_time = 0
-            self.frames: List[Frame] = []
-    class Frame:
-        def __init__(self):
-            self.left = 0
-            self.top = 0
-            self.width = 0
-            self.height = 0
-            self.delay_num = 0
-            self.delay_den = 100
-            self.delay_ms = 0
-            self.disposeOp = 0
-            self.blendOp = 0
-            self.data = None
     
     PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
     if buffer[:8] != PNG_SIGNATURE:
@@ -325,7 +326,7 @@ def parse_apng(buffer: bytes) -> APNG:
                 apng.frames.append(frame)
                 frame_number += 1
             
-            frame = Frame()
+            frame = APNGFrame()
             frame.width, frame.height = struct.unpack('>II', chunk_data[4:12])
             frame.left, frame.top = struct.unpack('>II', chunk_data[12:20])
             frame.delay_num, frame.delay_den = struct.unpack('>HH', chunk_data[20:24])
