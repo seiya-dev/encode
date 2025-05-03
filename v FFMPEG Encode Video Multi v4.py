@@ -21,6 +21,7 @@ except ModuleNotFoundError as errorModule:
 try:
     from questionary import press_any_key_to_continue as qpause
     from questionary import text as qtext, select as qselect, confirm as qconfirm
+    from questionary import Choice, Validator, ValidationError
 except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))
     exit()
