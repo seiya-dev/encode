@@ -10,9 +10,11 @@ from pathlib import Path
 from pathlib import PurePath
 
 try:
-    import questionary
+    from questionary import press_any_key_to_continue as qpause
+    from questionary import text as qtext, select as qselect, confirm as qconfirm
     from questionary import Choice, Validator, ValidationError
-except ModuleNotFoundError:
+except ModuleNotFoundError as errorModule:
+    # print(f':: {errorModule}')
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
@@ -40,7 +42,7 @@ def configFile(inFile: Path):
     print(f':: Duration : {videoDur_h:02.0f}:{videoDur_m:02.0f}:{videoDur_s:02.0f}')
     
     vFilters = '[0:v:0]format=yuv420p'
-    encCrf = questionary.text('Set Encode CRF:', validate=IntValidator, default='20').ask()
+    encCrf = qtext('Set Encode CRF:', validate=IntValidator, default='20').ask()
     
     audioList = list()
     audioData = getMediaData(inFile, 'a')
@@ -50,19 +52,19 @@ def configFile(inFile: Path):
     audioList.append(Choice('[-1]: No Audio', value='-1'))
     
     audioCmd = list()
-    audioTrack = questionary.select('Select Audio Track:', audioList).ask()
+    audioTrack = qselect('Select Audio Track:', audioList).ask()
     if audioTrack != '-1':
-        encodeAudio = questionary.confirm('Encode Audio to AAC 192k 2ch (Default=No):', default=False).ask()
+        encodeAudio = qconfirm('Encode Audio to AAC 192k 2ch (Default=No):', default=False).ask()
         atid = int(audioTrack)
         if encodeAudio:
             audioCmd = [ '-map', f'0:a:{atid}?', f'-c:a', 'aac', '-cutoff', '0', '-b:a', f'192k', '-ac', '2' ]
         else:
             audioCmd = [ '-map', f'0:a:{atid}?', f'-c:a', 'copy' ]
     
-    vTitle = questionary.text('Set Video Title:').ask()
+    vTitle = qtext('Set Video Title:').ask()
     
     subsData = searchSubsFile(inFile)
-    subsTrack = questionary.select('Subtitle For HardSubs:', subsData.sel).ask()
+    subsTrack = qselect('Subtitle For HardSubs:', subsData.sel).ask()
     if subsTrack != '-1':
         inSubs = subsData.inf[subsTrack]
         inSubsFile = fixPath(inSubs['file'], True)
@@ -127,7 +129,7 @@ def configFolder(inPath: Path):
 
 # set folder
 if len(sys.argv) < 2:
-    inputPath = questionary.text(':: Folder/File: ', validate=PathValidator).ask()
+    inputPath = qtext(':: Folder/File: ', validate=PathValidator).ask()
     inputPath = inputPath.strip('\"')
 else:
     inputPath = sys.argv[1]
@@ -155,4 +157,4 @@ except Exception as err:
 
 # end
 if os.environ.get('isBatch') is None:
-    questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()
+    qpause(message = '\n:: Press enter to continue...\n').ask()

@@ -12,7 +12,6 @@ from pathlib import Path
 from pathlib import PurePath
 
 try:
-    import questionary
     from questionary import Choice, Validator, ValidationError
     from PIL import Image
     import numpy as np
