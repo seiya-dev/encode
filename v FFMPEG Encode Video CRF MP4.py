@@ -10,17 +10,21 @@ from pathlib import Path
 from pathlib import PurePath
 
 try:
+    from _encHelper import moduleNotFound
+    from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
+    from _encHelper import getMediaData, audioTitle, searchSubsFile
+except ModuleNotFoundError as errorModule:
+    print(':: EncHelper Not Found...')
+    input(':: Press enter to continue...\n')
+    exit()
+
+try:
     from questionary import press_any_key_to_continue as qpause
     from questionary import text as qtext, select as qselect, confirm as qconfirm
     from questionary import Choice, Validator, ValidationError
 except ModuleNotFoundError as errorModule:
-    # print(f':: {errorModule}')
-    print(':: Please install "questionary" module: pip install questionary')
-    input(':: Press enter to continue...\n')
+    moduleNotFound(str(errorModule))
     exit()
-
-from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-from _encHelper import getMediaData, audioTitle, searchSubsFile
 
 # file
 def configFile(inFile: Path):

@@ -11,13 +11,26 @@ from typing import List
 from pathlib import Path
 from pathlib import PurePath
 
+def moduleNotFound(text: str) -> str:
+    fmodule = re.search(r'\'(.*)\'', text)
+    returnText = ':: Please install required module'
+    if fmodule:
+        fmodule = fmodule.group().strip('\'')
+        if fmodule == 'numpy':
+            returnText = f'{returnText}: pip install numpy'
+        if fmodule == 'PIL':
+            returnText = f'{returnText}: pip install pillow'
+        if fmodule == 'questionary':
+            returnText = f'{returnText}: pip install questionary'
+    print(returnText)
+    input(':: Press enter to continue...\n')
+
 try:
     from questionary import Choice, Validator, ValidationError
     from PIL import Image
     import numpy as np
-except ModuleNotFoundError:
-    print(':: Please install required modules: pip install numpy Pillow questionary')
-    input(':: Press enter to continue...\n')
+except ModuleNotFoundError as errorModule:
+    moduleNotFound(str(errorModule))
     exit()
 
 # int validator

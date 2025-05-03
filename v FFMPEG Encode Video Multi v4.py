@@ -10,15 +10,20 @@ from pathlib import Path
 from pathlib import PurePath
 
 try:
-    import questionary
-    from questionary import Choice, Validator, ValidationError
-except ModuleNotFoundError:
-    print(':: Please install "questionary" module: pip install questionary')
+    from _encHelper import moduleNotFound
+    from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
+    from _encHelper import getMediaData, audioTitle, searchSubsFile
+except ModuleNotFoundError as errorModule:
+    print(':: EncHelper Not Found...')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-from _encHelper import getMediaData, audioTitle, searchSubsFile
+try:
+    from questionary import press_any_key_to_continue as qpause
+    from questionary import text as qtext, select as qselect, confirm as qconfirm
+except ModuleNotFoundError as errorModule:
+    moduleNotFound(str(errorModule))
+    exit()
 
 #################################################
 
@@ -219,14 +224,14 @@ def configEncode(inPath: Path):
         return
     
     # useNVEnc
-    nvEncCodec = questionary.confirm('Use NVEnc Codec (Default=No):', default=False).ask()
+    nvEncCodec = qconfirm('Use NVEnc Codec (Default=No):', default=False).ask()
     
     vqType = 'CQ' if nvEncCodec else 'CRF'
     vqual  = '26' if nvEncCodec else '20'
-    setQuality = questionary.text(f'Set Encode {vqType}:', validate=IntValidator, default=vqual).ask()
+    setQuality = qtext(f'Set Encode {vqType}:', validate=IntValidator, default=vqual).ask()
     
     # ask resizes
-    doResize = questionary.confirm('Do Multiply Qualities (Default=Yes):', default=True).ask()
+    doResize = qconfirm('Do Multiply Qualities (Default=Yes):', default=True).ask()
     
     audioList = list()
     audioData = getMediaData(inFiles[0], 'a')
@@ -235,21 +240,21 @@ def configEncode(inPath: Path):
         audioList.append(Choice(f'[0:{t}]: {tname}', value=f'0:{t}'))
     
     audioList.append(Choice('[-1]: No Audio', value='-1'))
-    audioTrackIndex = questionary.select('Select Audio Track:', audioList).ask()
+    audioTrackIndex = qselect('Select Audio Track:', audioList).ask()
     
     encodeAudio = False
     if audioTrackIndex != '-1':
-        encodeAudio = questionary.confirm('Encode Audio to AAC 192k 2ch (Default=No):', default=False).ask()
+        encodeAudio = qconfirm('Encode Audio to AAC 192k 2ch (Default=No):', default=False).ask()
     
     subsData = searchSubsFile(inFiles[0])
-    subsTrackIndex = questionary.select('Subtitle For HardSubs:', subsData.sel).ask()
+    subsTrackIndex = qselect('Subtitle For HardSubs:', subsData.sel).ask()
     
     for inFile in inFiles:
         encodeFile(inFile, nvEncCodec, setQuality, doResize, audioTrackIndex, encodeAudio, subsTrackIndex)
 
 # set folder
 if len(sys.argv) < 2:
-    inputPath = questionary.text(':: Folder/File: ', validate=PathValidator).ask()
+    inputPath = qtext(':: Folder/File: ', validate=PathValidator).ask()
     inputPath = inputPath.strip('\"')
 else:
     inputPath = sys.argv[1]
@@ -284,4 +289,4 @@ except Exception as err:
 
 # end
 if os.environ.get('isBatch') is None:
-    questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()
+    qpause(message = '\n:: Press enter to continue...\n').ask()
