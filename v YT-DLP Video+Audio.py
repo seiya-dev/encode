@@ -37,7 +37,7 @@ def configInput():
         return
     
     print(f'\n:: Format Exampe: bv*[height>=720][ext=mp4][vcodec^=avc1][protocol*=m3u8]+ba*[ext=m4a]')
-    print(f':: Format Exampe: bestvideov[ext=mp4],bestaudio[ext=m4a]/best[ext=mp4]/best')
+    print(f':: Format Exampe: bestvideo[ext=mp4],bestaudio[ext=m4a]/best[ext=mp4]/best')
     vformat = questionary.text(':: Video/Audio Format:').ask()
     ytCmd.extend(['--format', vformat])
     
