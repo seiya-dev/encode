@@ -1,19 +1,3 @@
-# :: Source Filters ::
-# BestSource.dll       https://github.com/vapoursynth/bestsource/releases/
-# LSMASHSource.dll     https://github.com/HomeOfAviSynthPlusEvolution/L-SMASH-Works/releases/
-# ffms2.dll            https://github.com/FFMS/ffms2/releases/
-# :: Resize Filters ::
-# avsresize.dll        https://codeberg.org/StvG/avsresize/releases/
-# :: Subtitling Filters ::
-# assrender.dll        https://github.com/pinterf/assrender/releases/
-#                      https://github.com/AmusementClub/assrender/releases/
-# SubImageFile.dll     https://github.com/Asd-g/AviSynthPlus-SubImageFile/releases/
-# :: Support Filters  ::
-# GetSystemEnv_x64.dll http://www.avisynth.nl/users/stickboy/GetSystemEnv.zip
-# PropToClip.dll       https://github.com/Asd-g/AviSynthPlus-PropToClip/releases/
-# :: Multipurpose Filters ::
-# masktools2.dll       https://github.com/pinterf/masktools/releases/
-
 ./av-plugins/BestSource.dll
 ./av-plugins/LSMASHSource.dll
 ./av-plugins/ffms2.dll
