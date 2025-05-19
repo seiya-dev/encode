@@ -39,7 +39,7 @@ def md4(data):
 def ed2k_hash(file_path, file_size):
     chunk_hashes = []
     
-    with open(file_path, 'rb') as f, tqdm(total=file_size, unit='B', unit_scale=True, desc='Hashing:') as pbar:
+    with open(file_path, 'rb') as f, tqdm(total=file_size, unit='B', unit_scale=True, desc='Hashing') as pbar:
         while True:
             chunk = f.read(CHUNK_SIZE)
             if not chunk:
