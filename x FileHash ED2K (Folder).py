@@ -9,7 +9,6 @@ from pathlib import PurePath
 
 import time
 import subprocess
-from tqdm import tqdm
 
 try:
     import questionary
@@ -23,6 +22,13 @@ try:
     from Cryptodome.Hash import MD4
 except ModuleNotFoundError:
     print(':: Please install "pycryptodomex" module: pip install pycryptodomex')
+    input(':: Press enter to continue...\n')
+    exit()
+
+try:
+    from tqdm import tqdm
+except ModuleNotFoundError:
+    print(':: Please install "tqdm" module: pip install tqdm')
     input(':: Press enter to continue...\n')
     exit()
 
