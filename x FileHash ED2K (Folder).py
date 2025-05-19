@@ -69,7 +69,7 @@ def checkFolder(inputPath: Path):
     if os.path.isdir(inputPath):
         for dirpath, dirnames, filenames in os.walk(inputPath):
             for file in filenames:
-                if Path(file).suffix.lower() in ('.mkv', '.mp4', '.mka', '.flac'):
+                if Path(file).suffix.lower() in ('.mkv', '.mp4', '.mka', '.flac', '.wav'):
                     get_hash = hashFile(Path(dirpath, file))
                     hashes.append(get_hash + '\n')
             hashes.append('\n')
