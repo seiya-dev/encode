@@ -29,6 +29,7 @@ except ModuleNotFoundError:
 from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
 from _encHelper import getMediaData, audioTitle, searchSubsFile
 
+ALLOWED_EXT = ('.mkv', '.mp4', '.mka', '.flac', '.wav')
 CHUNK_SIZE = 9728000  # 9500 KiB
 
 def md4(data):
@@ -69,7 +70,7 @@ def checkFolder(inputPath: Path):
     if os.path.isdir(inputPath):
         for dirpath, dirnames, filenames in os.walk(inputPath):
             for file in filenames:
-                if Path(file).suffix.lower() in ('.mkv', '.mp4', '.mka', '.flac', '.wav'):
+                if Path(file).suffix.lower() in ALLOWED_EXT:
                     get_hash = hashFile(Path(dirpath, file))
                     hashes.append(get_hash + '\n')
             hashes.append('\n')
