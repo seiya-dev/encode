@@ -72,7 +72,7 @@ def checkFolder(inputPath: Path):
                 if Path(file).suffix.lower() in (".mkv", ".mp4"):
                     get_hash = hashFile(Path(dirpath, file))
                     hashes.append(get_hash + '\n')
-        hashes.append('\n')
+            hashes.append('\n')
         
         with open(
             str(Path(inputPath, ".ed2k.txt")),
