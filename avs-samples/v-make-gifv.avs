@@ -5,12 +5,9 @@ global glob_cache_dir  = vFolder
 global glob_source_dir = vFolder
 
 bs(vEpName + ".mkv", atrack=1)
-ConvertBits(16)
 v = last
 
-vtrim = []
-vtrim = ArrayAdd(vtrim, v.trim(1, -1000000).z_Spline36Resize(854, 480, dither="error_diffusion"))
-vtrim = ArrayAdd(vtrim, v.trim(1, 1).z_Spline36Resize(854, 480, dither="error_diffusion").KillAudio())
+vtrim0 = v.trim(0, -1000000).spresize36(854, 480)
+vtrim1 = v.trim(0, -1000000).spresize36(854, 480).KillAudio()
 
-vtrim[0]
-ConvertBits(8)
+return vtrim0

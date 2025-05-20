@@ -147,6 +147,13 @@ function ffa(string media_file, string "source_dir", string "cache_dir", bool "c
     return v
 }
 
+function spresize36(clip video, int width, int height){
+    v = video.ConvertBits(16)
+    v = v.z_Spline36Resize(width, height, dither="error_diffusion")
+    v = v.ConvertBits(8)
+    return v
+}
+
 function videoAddPadMod2(clip c) {
     pr = c.Width() % 2 == 0 ? 0 : 1
     pb = c.Height() % 2 == 0 ? 0 : 1
