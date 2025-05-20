@@ -18,10 +18,16 @@ def moduleNotFound(text: str) -> str:
         fmodule = fmodule.group().strip('\'')
         if fmodule == 'numpy':
             returnText = f'{returnText}: pip install numpy'
+        if fmodule == 'tqdm':
+            returnText = f'{returnText}: pip install tqdm'
         if fmodule == 'PIL':
             returnText = f'{returnText}: pip install pillow'
+        if fmodule == 'yaml':
+            returnText = f'{returnText}: pip install PyYAML'
         if fmodule == 'questionary':
             returnText = f'{returnText}: pip install questionary'
+        if fmodule == 'Cryptodome':
+            returnText = f'{returnText}: pip install pycryptodomex'
     print(returnText)
     input(':: Press enter to continue...\n')
 

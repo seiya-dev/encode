@@ -1,42 +1,28 @@
 #!/usr/bin/env python3
 
-import sys
 import os
-import re
-
+import sys
 from pathlib import Path
-from pathlib import PurePath
-
-import time
-import subprocess
 
 try:
-    import questionary
-    from questionary import Choice, Validator, ValidationError
-except ModuleNotFoundError:
-    print(':: Please install "questionary" module: pip install questionary')
+    from _encHelper import moduleNotFound
+    from _encHelper import PathValidator
+except ModuleNotFoundError as errorModule:
+    print(':: EncHelper Not Found...')
     input(':: Press enter to continue...\n')
     exit()
 
 try:
+    from questionary import text as qtext
+    from questionary import press_any_key_to_continue as qpause
     from Cryptodome.Hash import MD4
-except ModuleNotFoundError:
-    print(':: Please install "pycryptodomex" module: pip install pycryptodomex')
-    input(':: Press enter to continue...\n')
-    exit()
-
-try:
     from tqdm import tqdm
-except ModuleNotFoundError:
-    print(':: Please install "tqdm" module: pip install tqdm')
-    input(':: Press enter to continue...\n')
+except ModuleNotFoundError as errorModule:
+    moduleNotFound(str(errorModule))
     exit()
-
-from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-from _encHelper import getMediaData, audioTitle, searchSubsFile
 
 ALLOWED_EXT = ('.mkv', '.mp4', '.mka', '.flac', '.wav')
-CHUNK_SIZE = 9728000  # 9500 KiB
+CHUNK_SIZE = 1024 * 9500 # 9500 KiB
 
 def md4(data):
     h = MD4.new()
@@ -82,16 +68,16 @@ def checkFolder(inputPath: Path):
             hashes.append('\n')
         
         with open(
-            str(Path(inputPath, ".ed2k.txt")),
-            "a",
-            encoding="utf-8",
-            newline="\n"
+            str(Path(inputPath, '.ed2k.txt')),
+            'a',
+            encoding='utf-8',
+            newline='\n'
         ) as f:
             f.writelines(hashes)
 
 # set folder
 if len(sys.argv) < 2:
-    inputPath = questionary.text(':: Folder: ', validate=PathValidator).ask()
+    inputPath = qtext(':: Folder: ', validate=PathValidator).ask()
     inputPath = inputPath.strip('\"')
 else:
     inputPath = sys.argv[1]
@@ -104,4 +90,4 @@ else:
 
 # end
 if os.environ.get('isBatch') is None:
-    questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()
+    qpause(message = '\n:: Press enter to continue...\n').ask()
