@@ -6,7 +6,7 @@ import sys
 import subprocess
 
 try:
-    from questionary press_any_key_to_continue as qpause
+    from questionary import press_any_key_to_continue as qpause
     from questionary import text as qtext, select as qselect, confirm as qconfirm
     from questionary import Choice, Validator, ValidationError
 except ModuleNotFoundError:
@@ -16,7 +16,7 @@ except ModuleNotFoundError:
 
 # file
 def configInput():
-    input_url = questionary.text(':: Input URL:').ask()
+    input_url = qtext(':: Input URL:').ask()
     
     ytCmd = list()
     cookiePath = os.path.expanduser('~/.config/yt-dlp-cookies.txt')
