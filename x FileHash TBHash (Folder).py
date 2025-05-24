@@ -21,7 +21,7 @@ except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))
     exit()
 
-ALLOWED_EXT = ('.mkv', '.mp4', '.mka', '.flac', '.wav')
+ALLOWED_EXT = ('.mkv', '.mp4', '.mka', '.flac', '.wav', '.7z')
 BLOCK_SIZE = 1024 * 256 # 256 KiB
 
 def get_chunk_size(file_size):
