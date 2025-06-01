@@ -121,7 +121,7 @@ def checkFolder(inputPath: Path):
                     
                     if tbfile_path.is_file():
                         print('TBHash File:', file_path.name)
-                    if file_size > get_chunk_size(0):
+                    elif file_size > get_chunk_size(0):
                         print('Hashing:', file_path.name)
                         get_hash = hash_file(file_path, file_size)
                         with open(f'{file_path}.tbhash', 'w', encoding='utf-8', newline='\n') as f:
