@@ -21,7 +21,7 @@ except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))
     exit()
 
-ALLOWED_EXT = ('.mkv', '.mp4', '.mka', '.flac', '.wav')
+ALLOWED_EXT = ('.mkv', '.mp4', '.avi', '.mka', '.flac', '.wav', '.7z')
 CHUNK_SIZE = 1024 * 9500 # 9500 KiB
 
 def md4(data):
