@@ -228,7 +228,7 @@ def configEncode(inPath: Path):
     nvEncCodec = qconfirm('Use NVEnc Codec (Default=No):', default=False).ask()
     
     vqType = 'CQ' if nvEncCodec else 'CRF'
-    vqual  = '26' if nvEncCodec else '20'
+    vqual  = '25' if nvEncCodec else '20'
     setQuality = qtext(f'Set Encode {vqType}:', validate=IntValidator, default=vqual).ask()
     
     # ask resizes
