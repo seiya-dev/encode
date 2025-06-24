@@ -102,6 +102,7 @@ def doEncode(inFile: Path, pspEncoderMode: int, pspEncoderQuality: str,
     encCmd.extend([ '-i', ])
     encCmd.extend([ os.path.join(
         os.path.abspath(os.path.dirname(__file__)),
+        '..',
         'avs-templates',
         'psp-encode.avs',
     )])
