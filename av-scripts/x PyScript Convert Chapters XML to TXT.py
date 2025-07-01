@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-x Convert Chapters (XML to TXT).py – Convert Matroska XML chapter files to OGM (TXT) format.
+Convert Matroska XML chapter files to OGM (TXT) format.
 
 USAGE
 -----
