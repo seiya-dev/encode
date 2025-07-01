@@ -5,19 +5,19 @@ x Convert Chapters (XML to TXT).py – Convert Matroska XML chapter files to OGM
 USAGE
 -----
 # Single file → filename.chapters.txt
-python 'x Convert Chapters (XML to TXT).py' movie.xml
+python '<scriptfile>.py' movie.xml
 
 # No arguments → interactive file/folder picker
-python 'x Convert Chapters (XML to TXT).py'
+python '<scriptfile>.py'
 
 # Directory → every *.xml converted to *.chapters.txt in-place
-python 'x Convert Chapters (XML to TXT).py' /path/to/folder
+python '<scriptfile>.py' /path/to/folder
 '''
 
 from __future__ import annotations
-import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
+import sys
 
 try:
     import questionary
@@ -71,11 +71,15 @@ def main():
     if not input_path:
         input_str = questionary.path('Select XML file or folder:').ask()
         if not input_str:
-            sys.exit('No input provided.')
+            print('No input provided.')
+            questionary.press_any_key_to_continue().ask()
+            return
         input_path = Path(input_str)
 
     if not input_path.exists():
-        sys.exit(f'Input does not exist: {input_path}')
+        print(f'Input does not exist: {input_path}')
+        questionary.press_any_key_to_continue().ask()
+        return
 
     if input_path.is_file():
         convert_file(input_path, out_path_for(input_path))
@@ -83,13 +87,17 @@ def main():
     elif input_path.is_dir():
         xml_files = sorted(p for p in input_path.glob('*.xml') if p.is_file())
         if not xml_files:
-            sys.exit('No XML files found in directory.')
+            print('No XML files found in directory.')
+            questionary.press_any_key_to_continue().ask()
+            return
         for x in xml_files:
             out = out_path_for(x)
             convert_file(x, out)
             print(f'[{x.name}] → [{out.name}]')
     else:
-        sys.exit('Input must be a file or directory.')
+        print('Input must be a file or directory.')
+        questionary.press_any_key_to_continue().ask()
+        return
 
     questionary.press_any_key_to_continue().ask()
 
