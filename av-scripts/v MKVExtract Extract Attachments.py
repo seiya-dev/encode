@@ -61,7 +61,7 @@ def extractFile(file: Path):
             os.mkdir(outdir)
         subprocess.run(attExtCmd)
     
-    attExtCmd = ['mkvextract', file, 'chapters', '--ui-language', 'en', '-s', f'{file}.ogm.txt']
+    attExtCmd = ['mkvextract', file, 'chapters', '--ui-language', 'en', '-s', f'{file}.chapters.txt']
     subprocess.run(attExtCmd)
 
 def extractFolder(inputPath: Path):
