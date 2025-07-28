@@ -49,7 +49,7 @@ def hash_file(file_path, file_size):
     chunk_accum = 0
     bytes_read = 0
     
-    with open(file_path, 'rb') as f, tqdm(total=file_size, unit='B', unit_scale=True, desc="Hashing") as pbar:
+    with open(file_path, 'rb') as f, tqdm(total=file_size, unit='B', unit_divisor=1024, unit_scale=True, desc='Hashing') as pbar:
         while True:
             block = f.read(BLOCK_SIZE)
             if not block:
@@ -60,9 +60,9 @@ def hash_file(file_path, file_size):
             md5file.update(block)
             
             if not slice_ready:
-                remain = max(0, 256 * 1024 - bytes_read)
+                remain = max(0, 1024 * 256 - bytes_read)
                 md5slice.update(block[:remain])
-                if bytes_read + len(block) >= 256 * 1024:
+                if bytes_read + len(block) >= 1024 * 256:
                     slice_ready = True
             
             chunk_buf.extend(block)
@@ -128,7 +128,6 @@ def checkFolder(inputPath: Path):
                             f.write(yaml.dump(get_hash, Dumper=IndentDumper, indent=2, default_flow_style=False, sort_keys=False))
                     else:
                         print('File too small:', file_path.name)
-
 
 # set folder
 if len(sys.argv) < 2:

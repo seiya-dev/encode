@@ -1,6 +1,7 @@
 import io
 import os
 import re
+import sys
 import json
 import zlib
 import struct
@@ -30,6 +31,13 @@ def moduleNotFound(text: str) -> str:
             returnText = f'{returnText}: pip install pycryptodomex'
     print(returnText)
     input(':: Press enter to continue...\n')
+
+def set_console_title(title: str):
+    if os.name == 'nt':
+        os.system(f'title {title}')
+    else:
+        sys.stdout.write(f'\33]0;{title}\a')
+        sys.stdout.flush()
 
 try:
     from questionary import Choice, Validator, ValidationError

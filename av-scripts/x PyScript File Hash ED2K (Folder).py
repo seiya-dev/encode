@@ -21,7 +21,7 @@ except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))
     exit()
 
-ALLOWED_EXT = ('.mkv', '.mp4', '.avi', '.mka', '.flac', '.wav', '.7z')
+ALLOWED_EXT = ('.mkv', '.mp4', '.avi', '.mka', '.flac', '.wav')
 CHUNK_SIZE = 1024 * 9500 # 9500 KiB
 
 def md4(data):
@@ -32,7 +32,7 @@ def md4(data):
 def ed2k_hash(file_path, file_size):
     chunk_hashes = []
     
-    with open(file_path, 'rb') as f, tqdm(total=file_size, unit='B', unit_scale=True, desc='Hashing') as pbar:
+    with open(file_path, 'rb') as f, tqdm(total=file_size, unit='B', unit_divisor=1024, unit_scale=True, desc='Hashing') as pbar:
         while True:
             chunk = f.read(CHUNK_SIZE)
             if not chunk:
