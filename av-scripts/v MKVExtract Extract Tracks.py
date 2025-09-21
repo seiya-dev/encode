@@ -128,7 +128,7 @@ trackIndex = None
 
 # set folder
 if len(sys.argv) < 2:
-    inputPath = questionary.text(':: Folder: ', validate=PathValidator).ask()
+    inputPath = questionary.text(':: Folder/File: ', validate=PathValidator).ask()
     inputPath = inputPath.strip('\"')
 else:
     inputPath = sys.argv[1]

@@ -21,6 +21,7 @@ except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))
     exit()
 
+print(':: File Hash: ED2K ::')
 ALLOWED_EXT = ('.mkv', '.mp4', '.avi', '.mka', '.flac', '.wav')
 CHUNK_SIZE = 1024 * 9500 # 9500 KiB
 

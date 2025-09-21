@@ -22,6 +22,7 @@ except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))
     exit()
 
+print(':: File Hash: TBHash ::')
 ALLOWED_EXT = ('.mkv', '.mp4', '.avi', '.mka', '.flac', '.wav', '.7z')
 BLOCK_SIZE = 1024 * 256 # 256 KiB
 
