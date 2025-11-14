@@ -58,8 +58,8 @@ def ms_to_ass_time(ms):
     return f"{h}:{m:02d}:{s:02d}.{c:02d}"
 
 def srt_block_iter(text):
-    # Split on blank lines, robust to different line endings
-    chunks = re.split(r"(?:\r?\n){2,}", text.strip(), flags=re.MULTILINE)
+    text = text.replace("\ufeff", "")
+    chunks = re.split(r"(?:\r?\n){2,}", text, flags=re.MULTILINE)
     for chunk in chunks:
         if chunk.strip():
             yield chunk
