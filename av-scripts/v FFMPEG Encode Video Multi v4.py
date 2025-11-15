@@ -13,6 +13,7 @@ try:
     from _encHelper import moduleNotFound
     from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
     from _encHelper import getMediaData, audioTitle, searchSubsFile
+    from _encHelper import classify_video_resolution
 except ModuleNotFoundError as errorModule:
     print(':: EncHelper Not Found...')
     input(':: Press enter to continue...\n')
@@ -52,17 +53,11 @@ def encodeFile(inFile: Path, nvEncCodec: bool, setQuality: str, doResize: bool, 
     outVideoSize = [[ str(videoData['width']), str(videoData['height']) ]]
     audioBitrate = '192'
     
-    if 'display_aspect_ratio' in videoData:
-        aspect = videoData['display_aspect_ratio'].split(':')
-        aspect = int(aspect[0]) / int(aspect[1])
-    else:
-        aspect = videoData['width'] / videoData['height']
-    aspect = round(aspect, 2)
-    
     if doResize:
-        if videoData['width'] >= aspect * 1440 - 80 or videoData['height'] >= 1440:
+        src_data = classify_video_resolution(videoData['width'], videoData['height'])
+        if src_data['numeric_label'] >= 1440:
             outVideoSize.append(['1920', '1080'])
-        if videoData['width'] >= aspect * 1080 - 80 or videoData['height'] >= 1080:
+        if src_data['numeric_label'] >= 1080:
             outVideoSize.append(['1280', '720'])
     
     for x in range(len(outVideoSize)):
@@ -75,7 +70,9 @@ def encodeFile(inFile: Path, nvEncCodec: bool, setQuality: str, doResize: bool, 
             outNameTemp = (re.sub(reClean, '', outNameTemp)).strip()
             reMatchClean = re.search(reClean, outNameTemp)
         
-        outExt = f'{curVideoSize[1]}p'
+        vid_res = classify_video_resolution(int(curVideoSize[0]), int(curVideoSize[1]))
+        outExt = vid_res['label']
+        
         if m := reName.match(outNameTemp):
             title, episode = m.group('title'), m.group('episode')
             outFolder = f'{outFolder}/../{title}'

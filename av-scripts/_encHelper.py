@@ -12,6 +12,9 @@ from typing import List
 from pathlib import Path
 from pathlib import PurePath
 
+from dataclasses import dataclass
+from typing import Optional, Dict, Any
+
 def moduleNotFound(text: str) -> str:
     fmodule = re.search(r'\'(.*)\'', text)
     returnText = ':: Please install required module'
@@ -95,6 +98,127 @@ def fixPath(inFile: Path, forFFmpeg: bool = False):
 extVideoFile = ['.mkv', '.mp4', '.mov', '.avi', '.avs']
 extAudioFile = ['.mka', '.m4a', '.aac', '.flac', '.eac3', '.mp3', '.wav']
 extSubsFile  = ['.ass', '.srt']
+
+@dataclass
+class ResolutionStandard:
+    label: str
+    width: int
+    height: int
+    
+    @property
+    def numeric(self) -> int:
+        return int(''.join(filter(str.isdigit, self.label)))
+    
+    @property
+    def aspect_ratio(self) -> float:
+        return self.width / self.height
+
+# Common resolutions
+STD_RESOLUTIONS = [
+    # --- 16:9 ---
+    ResolutionStandard("144p", 256, 144),
+    ResolutionStandard("240p", 426, 240),
+    ResolutionStandard("360p", 640, 360),
+    ResolutionStandard("480p", 854, 480),
+    ResolutionStandard("720p", 1280, 720),
+    ResolutionStandard("1080p", 1920, 1080),
+    ResolutionStandard("1440p", 2560, 1440),
+    ResolutionStandard("2160p", 3840, 2160),
+    ResolutionStandard("4320p", 7680, 4320),
+    # --- FULL 4:3 RANGE (up to 1920x1440) ---
+    ResolutionStandard("240p (4:3)", 320, 240),
+    ResolutionStandard("360p (4:3)", 480, 360),
+    ResolutionStandard("480p (4:3)", 640, 480),
+    ResolutionStandard("600p (4:3)", 800, 600),
+    ResolutionStandard("768p (4:3)", 1024, 768),
+    ResolutionStandard("960p (4:3)", 1280, 960),
+    ResolutionStandard("1080p (4:3)", 1440, 1080),
+    ResolutionStandard("1440p (4:3)", 1920, 1440),
+    # --- 2.35:1 CINEMASCOPE / ANAMORPHIC ---
+    ResolutionStandard("2.35:1 800w", 800, 340),
+    ResolutionStandard("2.35:1 1280w", 1280, 544),
+    ResolutionStandard("2.35:1 1920w", 1920, 816),
+    ResolutionStandard("2.35:1 2560w", 2560, 1088),
+    ResolutionStandard("2.35:1 3840w", 3840, 1634),
+    ResolutionStandard("2.35:1 4096w", 4096, 1740),
+]
+
+def classify_video_resolution(width: int, height: int) -> Dict[str, Any]:
+    if width <= 0 or height <= 0:
+        raise ValueError("Width and height must be positive integers.")
+    
+    # Orientation from original values
+    if width > height:
+        orientation = "landscape"
+    elif height > width:
+        orientation = "portrait"
+    else:
+        orientation = "square"
+    
+    # Normalize so that width >= height
+    norm_width, norm_height = (max(width, height), min(width, height))
+    aspect = norm_width / norm_height
+    
+    # Tolerances
+    MAX_HEIGHT_REL_DIFF = 0.25   # 25% height difference allowed
+    MAX_AR_REL_DIFF = 0.12       # 12% aspect ratio difference allowed
+    
+    best_match: Optional[ResolutionStandard] = None
+    best_score = float("inf")
+    
+    for std in STD_RESOLUTIONS:
+        std_ar = std.aspect_ratio
+        height_rel_diff = abs(norm_height - std.height) / std.height
+        ar_rel_diff = abs(aspect - std_ar) / std_ar
+
+        # Skip clearly incompatible candidates
+        if height_rel_diff > MAX_HEIGHT_REL_DIFF or ar_rel_diff > MAX_AR_REL_DIFF:
+            continue
+
+        score = height_rel_diff + ar_rel_diff
+        if score < best_score:
+            best_score = score
+            best_match = std
+    
+    if best_match is None:
+        return {
+            "label": "Unknown",
+            "numeric_label": None,
+            "orientation": orientation,
+            "original_size": (width, height),
+            "normalized_size": (norm_width, norm_height),
+            "aspect_ratio": round(aspect, 4),
+        }
+    
+    # Determine final p-label
+    std_ar = best_match.aspect_ratio
+    is_scope = 2.30 < std_ar < 2.40  # 2.35-ish
+    
+    if is_scope:
+        # Map 2.35:1 to standard container-based p
+        scope_width_map = {
+            1280: 720,
+            1920: 1080,
+            2560: 1440,
+            3840: 2160,
+            4096: 2160,
+        }
+        label_height = scope_width_map.get(best_match.width, best_match.height)
+    else:
+        # Normal: use matched height as p-label
+        label_height = best_match.height
+    
+    label = f"{label_height}p"
+    numeric = label_height
+    
+    return {
+        "label": label,
+        "numeric_label": numeric,
+        "orientation": orientation,
+        "original_size": (width, height),
+        "normalized_size": (norm_width, norm_height),
+        "aspect_ratio": round(aspect, 4),
+    }
 
 # search files
 def searchMedia(inputPath: Path, prefixName: str, extFilter: list) -> list:
