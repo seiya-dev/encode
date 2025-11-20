@@ -10,7 +10,6 @@
 ### Resize Filters
 - [avsresize](https://codeberg.org/StvG/avsresize/releases/latest)
 ### Subtitling Filters
-- [assrender (AmusementClub)](https://github.com/AmusementClub/assrender/releases/latest)
 - [assrender (pinterf)](https://github.com/pinterf/assrender/releases/latest)
 - [SubImageFile](https://github.com/Asd-g/AviSynthPlus-SubImageFile/releases/latest)
 ### Support Filters

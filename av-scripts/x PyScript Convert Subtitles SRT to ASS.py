@@ -17,6 +17,7 @@ except ModuleNotFoundError:
     input(':: Press enter to continue...\n')
     exit()
 
+print(':: Convert Subtitles SRT to ASS ::')
 ASS_HEADER = """[Script Info]
 Title: Default
 Original Translation: 
@@ -40,7 +41,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
 TIMECODE_RE = re.compile(
-    r"^\s*(\d{1,2}):([0-5]\d):([0-5]\d)[,\.](\d{1,3})\s*-->\s*(\d{1,2}):([0-5]\d):([0-5]\d)[,\.](\d{1,3})\s*$"
+    r'^\s*(\d{1,2}):([0-5]\d):([0-5]\d)[,\.](\d{1,3})\s*-->\s*(\d{1,2}):([0-5]\d):([0-5]\d)[,\.](\d{1,3})\s*$'
 )
 
 def to_ms(h, m, s, ms):
@@ -55,11 +56,11 @@ def ms_to_ass_time(ms):
     cs %= 100 * 60
     s = cs // 100
     c = cs % 100
-    return f"{h}:{m:02d}:{s:02d}.{c:02d}"
+    return f'{h}:{m:02d}:{s:02d}.{c:02d}'
 
 def srt_block_iter(text):
-    text = text.replace("\ufeff", "")
-    chunks = re.split(r"(?:\r?\n){2,}", text, flags=re.MULTILINE)
+    text = text.replace('\ufeff', '')
+    chunks = re.split(r'(?:\r?\n){2,}', text, flags=re.MULTILINE)
     for chunk in chunks:
         if chunk.strip():
             yield chunk
@@ -71,29 +72,29 @@ def srt_to_events(srt_text):
         lines = block.splitlines()
         if not lines:
             continue
-
+        
         # Optional numeric index on first line
         idx = 0
-        if re.match(r"^\s*\d+\s*$", lines[0]):
+        if re.match(r'^\s*\d+\s*$', lines[0]):
             idx = 1
-
+        
         if idx >= len(lines):
             continue
-
+        
         m = TIMECODE_RE.match(lines[idx].strip())
         if not m:
-            # Not a valid subtitle block; skip
+            print(f'WARN: Bad block: {block}')
             continue
-
+        
         h1, m1, s1, ms1, h2, m2, s2, ms2 = m.groups()
         start_ms = to_ms(h1, m1, s1, ms1)
         end_ms = to_ms(h2, m2, s2, ms2)
-
-        text_lines = [ln.rstrip("\r") for ln in lines[idx + 1 :]]
+        
+        text_lines = [ln.rstrip('\r') for ln in lines[idx + 1 :]]
         # Drop trailing empty lines
         while text_lines and not text_lines[-1].strip():
             text_lines.pop()
-
+        
         events.append((start_ms, end_ms, text_lines))
     return events
 
@@ -102,23 +103,23 @@ def html_to_ass(text):
     # Handles <i>, <b>, <u>, and their closing forms; strips other tags.
     # Basic replacements for italics/bold/underline
     repl = [
-        (re.compile(r"<\s*i\s*>", re.IGNORECASE), r"{\\i1}"),
-        (re.compile(r"<\s*/\s*i\s*>", re.IGNORECASE), r"{\\i0}"),
-        (re.compile(r"<\s*b\s*>", re.IGNORECASE), r"{\\b1}"),
-        (re.compile(r"<\s*/\s*b\s*>", re.IGNORECASE), r"{\\b0}"),
-        (re.compile(r"<\s*u\s*>", re.IGNORECASE), r"{\\u1}"),
-        (re.compile(r"<\s*/\s*u\s*>", re.IGNORECASE), r"{\\u0}"),
-        (re.compile(r"<\s*br\s*/?\s*>", re.IGNORECASE), r"\\N"),
+        (re.compile(r'<\s*i\s*>', re.IGNORECASE), r'{\\i1}'),
+        (re.compile(r'<\s*/\s*i\s*>', re.IGNORECASE), r'{\\i0}'),
+        (re.compile(r'<\s*b\s*>', re.IGNORECASE), r'{\\b1}'),
+        (re.compile(r'<\s*/\s*b\s*>', re.IGNORECASE), r'{\\b0}'),
+        (re.compile(r'<\s*u\s*>', re.IGNORECASE), r'{\\u1}'),
+        (re.compile(r'<\s*/\s*u\s*>', re.IGNORECASE), r'{\\u0}'),
+        (re.compile(r'<\s*br\s*/?\s*>', re.IGNORECASE), r'\\N'),
     ]
     for pat, rep in repl:
         text = pat.sub(rep, text)
     # Strip any other tags
-    text = re.sub(r"</?\s*\w+[^>]*>", "", text)
+    text = re.sub(r'</?\s*\w+[^>]*>', '', text)
     return text
 
 def escape_ass_text(text):
     # already converted <br> to \N; now handle actual newlines
-    text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\n", r"\N")
+    text = text.replace('\r\n', '\n').replace('\r', '\n').replace('\n', r'\N')
     return text
 
 def build_dialogue_line(start_ms, end_ms, raw_lines):
@@ -131,21 +132,21 @@ def build_dialogue_line(start_ms, end_ms, raw_lines):
     end = ms_to_ass_time(end_ms)
 
     # Layer, Start, End, Style, Name, ML, MR, MV, Effect, Text
-    return f"Dialogue: 0,{start},{end},Default,,0,0,0,,{ass_text}"
+    return f'Dialogue: 0,{start},{end},Default,,0,0,0,,{ass_text}'
 
 def convert_srt_path(srt_path: Path, out_path: Path = None):
-    content = srt_path.read_text(encoding="utf-8", errors="replace")
+    content = srt_path.read_text(encoding='utf-8', errors='replace')
     events = srt_to_events(content)
     lines = [ASS_HEADER]
     for (st, et, txt_lines) in events:
         lines.append(build_dialogue_line(st, et, txt_lines))
-    out = out_path or srt_path.with_suffix(".ass")
-    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    out = out_path or srt_path.with_suffix('.ass')
+    out.write_text('\n'.join(lines) + '\n', encoding='utf-8')
     return out
 
 def convertFile(file: Path):
     file = Path(file)
-    if file.suffix.lower() != ".srt":
+    if file.suffix.lower() != '.srt':
         raise ValueError(f'Not an .srt file: "{file}"')
     out = convert_srt_path(file)
     print(f':: Converted: "{file.name}" -> "{out.name}"')
