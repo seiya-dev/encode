@@ -151,6 +151,11 @@ def encodeFile(inFile: Path, nvEncCodec: bool, setQuality: str, doResize: bool, 
             encCmd.extend([ '-an' ])
         encCmd.extend([ '-sn', '-dn' ])
         
+        use_debund = False
+        
+        if use_debund:
+            vFilters += ',deband'
+        
         encCmd.extend([ '-filter_complex', f'{vFilters}[video]' ])
         
         vcodec   = 'h264_nvenc' if nvEncCodec else 'libx264'

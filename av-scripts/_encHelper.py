@@ -95,7 +95,7 @@ def fixPath(inFile: Path, forFFmpeg: bool = False):
     return inFile
 
 # acceptable extensions
-extVideoFile = ['.mkv', '.mp4', '.mov', '.avi', '.avs']
+extVideoFile = ['.mkv', '.mp4', '.mov', '.avi', '.avs', '.webm']
 extAudioFile = ['.mka', '.m4a', '.aac', '.flac', '.eac3', '.mp3', '.wav']
 extSubsFile  = ['.ass', '.srt']
 
