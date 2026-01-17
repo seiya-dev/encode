@@ -35,7 +35,7 @@ reClean = re.compile(r'^(\[[^\[\]]*?\]|\([^\(\)]*?\))|(\s?\[[^\[\]]*?\]|\([^\(\)
 #################################################
 
 # encode
-def encodeFile(inFile: Path, nvEncCodec: bool, setQuality: str, doResize: bool, audioTrackIndex: str, encodeAudio: bool, subsTrackIndex: str):
+def encodeFile(inFile: Path, nvEncCodec: bool, setQuality: str, doDeband: bool, doResize: bool, audioTrackIndex: str, encodeAudio: bool, subsTrackIndex: str):
     # inFile  = os.path.abspath(inFile)
     inDir   = PurePath(inFile).parent
     inFonts = fixPath(f'{inDir}/fonts', True)
@@ -99,6 +99,9 @@ def encodeFile(inFile: Path, nvEncCodec: bool, setQuality: str, doResize: bool, 
         overlay = False
         inSubsLog = ''
         
+        if doDeband:
+            vFilters += ',deband'
+        
         if subsTrackIndex != '-1' and subsTrackIndex in inSubs.inf:
             inSubsInf  = inSubs.inf[subsTrackIndex]
             inSubsFile = fixPath(inSubsInf['file'], True)
@@ -150,11 +153,6 @@ def encodeFile(inFile: Path, nvEncCodec: bool, setQuality: str, doResize: bool, 
         if audioTrackIndex == '-1' or len(extAudio) > 0:
             encCmd.extend([ '-an' ])
         encCmd.extend([ '-sn', '-dn' ])
-        
-        use_debund = False
-        
-        if use_debund:
-            vFilters += ',deband'
         
         encCmd.extend([ '-filter_complex', f'{vFilters}[video]' ])
         
@@ -233,6 +231,9 @@ def configEncode(inPath: Path):
     vqual  = '25' if nvEncCodec else '20'
     setQuality = qtext(f'Set Encode {vqType}:', validate=IntValidator, default=vqual).ask()
     
+    # doDeband
+    doDeband = qconfirm('Add Deband (Default=No):', default=False).ask()
+    
     # ask resizes
     doResize = qconfirm('Do Multiply Qualities (Default=Yes):', default=True).ask()
     
@@ -253,7 +254,7 @@ def configEncode(inPath: Path):
     subsTrackIndex = qselect('Subtitle For HardSubs:', subsData.sel).ask()
     
     for inFile in inFiles:
-        encodeFile(inFile, nvEncCodec, setQuality, doResize, audioTrackIndex, encodeAudio, subsTrackIndex)
+        encodeFile(inFile, nvEncCodec, setQuality, doDeband, doResize, audioTrackIndex, encodeAudio, subsTrackIndex)
 
 # set folder
 if len(sys.argv) < 2:
