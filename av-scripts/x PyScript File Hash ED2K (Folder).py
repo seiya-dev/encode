@@ -15,7 +15,7 @@ except ModuleNotFoundError as errorModule:
 try:
     from questionary import text as qtext
     from questionary import press_any_key_to_continue as qpause
-    from Cryptodome.Hash import MD4
+    from Crypto.Hash import MD4
     from tqdm import tqdm
 except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))

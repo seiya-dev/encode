@@ -30,8 +30,8 @@ def moduleNotFound(text: str) -> str:
             returnText = f'{returnText}: pip install PyYAML'
         if fmodule == 'questionary':
             returnText = f'{returnText}: pip install questionary'
-        if fmodule == 'Cryptodome':
-            returnText = f'{returnText}: pip install pycryptodomex'
+        if fmodule == 'Crypto':
+            returnText = f'{returnText}: pip install pycryptodome'
     print(returnText)
     input(':: Press enter to continue...\n')
 
