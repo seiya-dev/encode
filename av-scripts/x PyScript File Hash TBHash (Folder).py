@@ -23,7 +23,7 @@ except ModuleNotFoundError as errorModule:
     exit()
 
 print(':: File Hash: TBHash ::')
-ALLOWED_EXT = ('.mkv', '.mp4', '.avi', '.mka', '.flac', '.wav', '.7z')
+ALLOWED_EXT = ('.mkv', '.mp4', '.avi', '.mka', '.flac', '.wav', '.7z', '.zip', '.iso', '.pdf')
 BLOCK_SIZE = 1024 * 256 # 256 KiB
 
 def get_chunk_size(file_size):
@@ -122,7 +122,7 @@ def checkFolder(inputPath: Path):
                     
                     if tbfile_path.is_file():
                         print('TBHash File:', file_path.name)
-                    elif file_size > get_chunk_size(0):
+                    elif file_size > BLOCK_SIZE:
                         print('Hashing:', file_path.name)
                         get_hash = hash_file(file_path, file_size)
                         with open(f'{file_path}.tbhash', 'w', encoding='utf-8', newline='\n') as f:
