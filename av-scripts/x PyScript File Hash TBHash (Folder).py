@@ -113,22 +113,30 @@ def checkFolder(inputPath: Path):
     print(f':: Selected path: {inputPath}\n')
     
     if os.path.isdir(inputPath):
+        files = []
+        
         for dirpath, dirnames, filenames in os.walk(inputPath):
             for file in filenames:
                 if Path(file).suffix.lower() in ALLOWED_EXT:
-                    file_path = Path(dirpath, file)
-                    file_size = file_path.stat().st_size
-                    tbfile_path = Path(f'{file_path}.tbhash')
-                    
-                    if tbfile_path.is_file():
-                        print('TBHash File:', file_path.name)
-                    elif file_size > BLOCK_SIZE:
-                        print('Hashing:', file_path.name)
-                        get_hash = hash_file(file_path, file_size)
-                        with open(f'{file_path}.tbhash', 'w', encoding='utf-8', newline='\n') as f:
-                            f.write(yaml.dump(get_hash, Dumper=IndentDumper, indent=2, default_flow_style=False, sort_keys=False))
-                    else:
-                        print('File too small:', file_path.name)
+                    files.append(Path(dirpath, file))
+        
+        total = len(files)
+        
+        for i, file_path in enumerate(files, start=1):
+            file_size = file_path.stat().st_size
+            tbfile_path = Path(f'{file_path}.tbhash')
+            
+            prefix = f'[{str(i).zfill(4)}/{str(total).zfill(4)}]'
+            
+            if tbfile_path.is_file():
+                print(prefix, 'TBHash File:', file_path.name)
+            elif file_size > BLOCK_SIZE:
+                print(prefix, 'Hashing:', file_path.name)
+                get_hash = hash_file(file_path, file_size)
+                with open(f'{file_path}.tbhash', 'w', encoding='utf-8', newline='\n') as f:
+                    f.write(yaml.dump(get_hash, Dumper=IndentDumper, indent=2, default_flow_style=False, sort_keys=False))
+            else:
+                print('File too small:', file_path.name)
 
 # set folder
 if len(sys.argv) < 2:
