@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
 
 import os
-import re
+import subprocess
 import sys
 import time
-import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, Validator, ValidationError
+    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-from _encHelper import getMediaData, audioTitle, searchSubsFile
+from _encHelper import PathValidator, extVideoFile
+
 
 # file
 def configFile(inFile: Path):
@@ -28,8 +25,8 @@ def configFile(inFile: Path):
     encCmd.extend([ r'ffmpeg', '-hide_banner', ])
     encCmd.extend([ '-loglevel', 'error', '-stats', ])
     encCmd.extend([ '-hwaccel', 'auto', ])
-    encCmd.extend([ '-i', inFile ]);
-    encCmd.extend([ '-f', 'null', '-' ]);
+    encCmd.extend([ '-i', inFile ])
+    encCmd.extend([ '-f', 'null', '-' ])
     
     startTime = time.monotonic()
     subprocess.run(encCmd)
@@ -77,7 +74,7 @@ try:
     else:
         print(f':: Input path is not a folder or video file: {inputPath}')
 except Exception as err:
-    print(f':: Something goes wrong...')
+    print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
 
 # end

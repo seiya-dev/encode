@@ -2,27 +2,35 @@
 
 import os
 import re
+import subprocess
 import sys
 import time
-import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+from pathlib import Path, PurePath
 
 try:
-    from _encHelper import moduleNotFound
-    from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-    from _encHelper import getMediaData, audioTitle, searchSubsFile
-    from _encHelper import classify_video_resolution
-except ModuleNotFoundError as errorModule:
+    from _encHelper import (
+        IntValidator,
+        PathValidator,
+        audioTitle,
+        boolYN,
+        classify_video_resolution,
+        extVideoFile,
+        fixPath,
+        getMediaData,
+        moduleNotFound,
+        searchSubsFile,
+    )
+except ModuleNotFoundError:
     print(':: EncHelper Not Found...')
     input(':: Press enter to continue...\n')
     exit()
 
 try:
+    from questionary import Choice, ValidationError, Validator
+    from questionary import confirm as qconfirm
     from questionary import press_any_key_to_continue as qpause
-    from questionary import text as qtext, select as qselect, confirm as qconfirm
-    from questionary import Choice, Validator, ValidationError
+    from questionary import select as qselect
+    from questionary import text as qtext
 except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))
     exit()
@@ -45,7 +53,7 @@ def encodeFile(inFile: Path, nvEncCodec: bool, setQuality: str, doDeband: bool, 
     if len(videoData) < 1:
         print()
         print(f':: Skipping: {PurePath(inFile).name}')
-        print(f':: No video streams!')
+        print(':: No video streams!')
         return
     
     videoData = videoData[0]
@@ -141,15 +149,15 @@ def encodeFile(inFile: Path, nvEncCodec: bool, setQuality: str, doDeband: bool, 
             atrack = audioTrackIndex.split(':')
             if len(audioData) > 0 and atrack[0] == '0':
                 outAudio += f'[{audioTrackIndex}] {audioTitle(audioData, int(atrack[1]))}'
-                audioCmd.extend([ '-map', f'{atrack[0]}:a:{atrack[1]}?', f'-c:a' ])
+                audioCmd.extend([ '-map', f'{atrack[0]}:a:{atrack[1]}?', '-c:a' ])
                 if encodeAudio:
                     outAudio += f' -> aac 2ch {audioBitrate}k'
                     audioCmd.extend([ 'aac', '-cutoff', '0', '-b:a', f'{audioBitrate}k', '-ac', '2' ])
                 else:
-                    outAudio += f' -> copy'
+                    outAudio += ' -> copy'
                     audioCmd.extend([ 'copy' ])
         
-        encCmd.extend([ '-i', inFile ]);
+        encCmd.extend([ '-i', inFile ])
         if audioTrackIndex == '-1' or len(extAudio) > 0:
             encCmd.extend([ '-an' ])
         encCmd.extend([ '-sn', '-dn' ])
@@ -281,14 +289,14 @@ try:
     else:
         print(f':: Input path is not a folder or video file: {inputPath}')
 except Exception as err:
-    print(f'\n:: Something goes wrong...')
+    print('\n:: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
     
     import traceback
     tb_exc = traceback.format_tb(err.__traceback__)
     
     for tb_line in tb_exc:
-        if not tb_line.startswith(f'  File "<frozen os>"'):
+        if not tb_line.startswith('  File "<frozen os>"'):
             print(f':: {tb_line.strip()}')
 
 # end

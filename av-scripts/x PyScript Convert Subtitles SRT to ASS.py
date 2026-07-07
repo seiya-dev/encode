@@ -4,14 +4,12 @@
 import os
 import re
 import sys
-
-from pathlib import Path
-from pathlib import PurePath
+from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, Validator, ValidationError
     from _encHelper import PathValidator
+    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
@@ -175,7 +173,7 @@ try:
     else:
         convertFolder(inputPath)
 except Exception as err:
-    print(f':: Something goes wrong...')
+    print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
 
 # end

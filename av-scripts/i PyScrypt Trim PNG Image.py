@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 
 import os
-import re
 import sys
-import time
-import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+from pathlib import Path, PurePath
 
 try:
-    from questionary import text as qtext, press_any_key_to_continue as qpause
-    from questionary import Choice, Validator, ValidationError
-    from PIL import Image
     import numpy as np
+    from PIL import Image
+    from questionary import Choice, ValidationError, Validator
+    from questionary import press_any_key_to_continue as qpause
+    from questionary import text as qtext
 except ModuleNotFoundError:
     print(':: Please install required modules: pip install numpy Pillow questionary')
     input(':: Press enter to continue...\n')
@@ -105,7 +101,7 @@ try:
     else:
         print(f':: Input path is not a folder or png file: {inputPath}')
 except Exception as err:
-    print(f':: Something goes wrong...')
+    print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
 
 # end

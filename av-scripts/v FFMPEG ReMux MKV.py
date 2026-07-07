@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
 
 import os
-import re
+import subprocess
 import sys
 import time
-import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, Validator, ValidationError
+    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-from _encHelper import getMediaData, audioTitle, subsTitle, searchSubsFile
+from _encHelper import audioTitle, extVideoFile, getMediaData, subsTitle
+
 
 # file
 def configFile(inFile: Path):
@@ -29,7 +26,7 @@ def configFile(inFile: Path):
     if len(videoData) < 1:
         print()
         print(f':: Skipping: {PurePath(inFile).name}')
-        print(f':: No video streams!')
+        print(':: No video streams!')
         return
     
     videoInfo = getMediaData(inFile)
@@ -49,7 +46,7 @@ def configFile(inFile: Path):
     audioTrack = questionary.select('Select Audio Track:', audioList).ask()
     if audioTrack != '-1':
         atid = int(audioTrack)
-        audioCmd = [ '-map', f'0:a:{atid}?', f'-c:a', 'copy' ]
+        audioCmd = [ '-map', f'0:a:{atid}?', '-c:a', 'copy' ]
     
     subsList = list()
     subsData = getMediaData(inFile, 's')
@@ -62,13 +59,13 @@ def configFile(inFile: Path):
     subsTrack = questionary.select('Select Subs Track:', subsList).ask()
     if subsTrack != '-1':
         stid = int(subsTrack)
-        subsCmd = [ '-map', f'0:s:{stid}?', f'-c:s', 'copy' ]
+        subsCmd = [ '-map', f'0:s:{stid}?', '-c:s', 'copy' ]
         
         attData = getMediaData(inFile, 't')
         for t in range(len(attData)):
             if 'tags' in attData[t] and 'title' in attData[t]['tags'] and 'mimetype' in attData[t]['tags']:
                 tags = attData[t]['tags']
-                subsCmd.extend([ f'-map', f'0:t:{t}' ])
+                subsCmd.extend([ '-map', f'0:t:{t}' ])
                 subsCmd.extend([ f'-metadata:s:t:{t}', f'filename={tags['filename']}' ])
                 subsCmd.extend([ f'-metadata:s:t:{t}', f'mimetype={tags['mimetype']}' ])
     
@@ -86,8 +83,8 @@ def configFile(inFile: Path):
     encCmd.extend([ '-hwaccel', 'auto', ])
     encCmd.extend([ '-fflags', '+bitexact', '-flags:v', '+bitexact', '-flags:a', '+bitexact' ])
     
-    encCmd.extend([ '-i', inFile ]);
-    encCmd.extend([ '-map', f'0:v:0?', '-c:v', 'copy' ])
+    encCmd.extend([ '-i', inFile ])
+    encCmd.extend([ '-map', '0:v:0?', '-c:v', 'copy' ])
     
     encCmd.extend(audioCmd)
     encCmd.extend(subsCmd)
@@ -114,7 +111,7 @@ def configFile(inFile: Path):
 # folder
 def configFolder(inPath: Path):
     print(f'\n:: Selected path: {os.path.abspath(inPath)}')
-    print(f'script not usable for dir!')
+    print('script not usable for dir!')
 
 # set folder
 if len(sys.argv) < 2:
@@ -140,7 +137,7 @@ try:
     else:
         print(f':: Input path is not a folder or video file: {inputPath}')
 except Exception as err:
-    print(f':: Something goes wrong...')
+    print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
 
 # end

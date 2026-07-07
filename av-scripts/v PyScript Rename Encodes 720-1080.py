@@ -1,25 +1,20 @@
 #!/usr/bin/env python3
 
-import sys
 import os
 import re
-
-from pathlib import Path
-from pathlib import PurePath
-
-import time
-import subprocess
+import sys
+from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, Validator, ValidationError
+    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-from _encHelper import getMediaData, audioTitle, searchSubsFile
+from _encHelper import PathValidator
+
 
 def renameFile(inFile: Path, targetTitle: str):
     
@@ -29,7 +24,7 @@ def renameFile(inFile: Path, targetTitle: str):
     if m := re.search(reSETartget, outName):
         episode, ext = m.group('episode'), m.group('ext')
         if targetTitle == '':
-            print(f':: Wrong input: Please set title!')
+            print(':: Wrong input: Please set title!')
             return
     elif m := re.match(reTarget, outName):
         title, episode, ext = m.group('title'), m.group('episode'), m.group('ext')

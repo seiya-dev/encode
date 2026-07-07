@@ -1,28 +1,24 @@
 #!/usr/bin/env python3
 
 import os
-import re
-import sys
-import time
 import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+import sys
+from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, Validator, ValidationError
+    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-from _encHelper import getMediaData, audioTitle, searchSubsFile
+from _encHelper import IntValidator, PathValidator
+
 
 def cutFile(inPath: Path):
     vFPS = questionary.select(
-        'Video FPS value:', 
+        'Video FPS value:',
         choices = [ '24000/1001','25/1','30000/1001','30/1','60/1' ],
     ).ask()
     
@@ -43,7 +39,7 @@ def cutFile(inPath: Path):
     sTime = round(sTime, 11)
     eTime = round(eTime, 11)
     
-    print(f':: TIME RANGE: {sTime}-{eTime} ({sFrame}-{eFrame})');
+    print(f':: TIME RANGE: {sTime}-{eTime} ({sFrame}-{eFrame})')
     
     inDir   = PurePath(inPath).parent
     inFile  = os.path.abspath(inPath)
@@ -65,7 +61,7 @@ def cutFile(inPath: Path):
 # folder
 def configFolder(inPath: Path):
     print(f'\n:: Selected path: {os.path.abspath(inPath)}')
-    print(f'script not usable for dir!')
+    print('script not usable for dir!')
 
 # set folder
 if len(sys.argv) < 2:
@@ -92,7 +88,7 @@ try:
     else:
         print(f':: Input path is not a folder or video file: {inputPath}')
 except Exception as err:
-    print(f':: Something goes wrong...')
+    print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
 
 # end

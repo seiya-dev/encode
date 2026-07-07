@@ -2,24 +2,21 @@
 
 # set libs
 import os
-import re
+import subprocess
 import sys
 import time
-import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, Validator, ValidationError
+    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-from _encHelper import getMediaData, audioTitle, searchSubsFile
+from _encHelper import audioTitle, extVideoFile, fixPath, getMediaData
+
 extAudioFile = ['.aac']
 
 # file
@@ -53,7 +50,7 @@ def configFile(inFile: Path):
     audioTrack = questionary.select('Select Audio Track:', audioList).ask()
     if audioTrack != '-1':
         atid = int(audioTrack)
-        audioCmd = [ '-map', f'0:a:{atid}?', f'-c:a', 'copy' ]
+        audioCmd = [ '-map', f'0:a:{atid}?', '-c:a', 'copy' ]
     
     vTitle = questionary.text('Set Video Title:').ask()
     
@@ -63,9 +60,9 @@ def configFile(inFile: Path):
     encCmd.extend([ '-hwaccel', 'auto', ])
     encCmd.extend([ '-fflags', '+bitexact', '-flags:v', '+bitexact', '-flags:a', '+bitexact' ])
     
-    encCmd.extend([ '-i', inFile ]);
+    encCmd.extend([ '-i', inFile ])
     if not noVideo:
-        encCmd.extend([ '-map', f'0:v:0?', '-c:v', 'copy' ])
+        encCmd.extend([ '-map', '0:v:0?', '-c:v', 'copy' ])
     
     encCmd.extend(audioCmd)
     encCmd.extend([ '-sn', '-dn' ])
@@ -89,7 +86,7 @@ def configFile(inFile: Path):
 # folder
 def configFolder(inPath: Path):
     print(f'\n:: Selected path: {os.path.abspath(inPath)}')
-    print(f'script not usable for dir!')
+    print('script not usable for dir!')
 
 # set folder
 if len(sys.argv) < 2:
@@ -115,14 +112,14 @@ try:
     else:
         print(f':: Input path is not a folder, video or audio file: {inputPath}')
 except Exception as err:
-    print(f':: Something goes wrong...')
+    print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
     
     import traceback
     tb_exc = traceback.format_tb(err.__traceback__)
     
     for tb_line in tb_exc:
-        if not tb_line.startswith(f'  File "<frozen os>"'):
+        if not tb_line.startswith('  File "<frozen os>"'):
             print(f':: {tb_line.strip()}')
 
 # end

@@ -1,26 +1,29 @@
 #!/usr/bin/env python3
 
 import os
-import re
-import sys
-import time
 import shutil
 import struct
 import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+import sys
+import time
+from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, Validator, ValidationError
+    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import boolYN, IntValidator, FloatValidatorP, PathValidator, extVideoFile, fixPath
-from _encHelper import getMediaData, audioTitle, searchSubsFile
+from _encHelper import (
+    FloatValidatorP,
+    IntValidator,
+    PathValidator,
+    extVideoFile,
+    getMediaData,
+)
+
 extVideoFile.extend(['.gif'])
 
 def videoFilterGen(extendedFilter: bool = False):
@@ -29,7 +32,7 @@ def videoFilterGen(extendedFilter: bool = False):
     if not extendedFilter:
         return baseFilter
     
-    rgbVal = f"r='r(X,Y)':g='g(X,Y)':b='b(X,Y)'"
+    rgbVal = "r='r(X,Y)':g='g(X,Y)':b='b(X,Y)'"
     rv = "25"
     
     alphaMask = (
@@ -54,7 +57,7 @@ def configFile(inFile: Path):
     if len(videoData) < 1:
         print()
         print(f':: Skipping: {PurePath(inFile).name}')
-        print(f':: No video streams!')
+        print(':: No video streams!')
         return
     
     # customs
@@ -89,7 +92,7 @@ def encodeTgSticker(inFile: Path, useOvl: bool, encCrf: int, encFPS: str, encTrm
     encCmd.extend([ '-flags:v', '+bitexact' ])
     encCmd.extend([ '-flags:a', '+bitexact' ])
     
-    encCmd.extend([ '-i', inFile ]);
+    encCmd.extend([ '-i', inFile ])
     encCmd.extend([ '-an', '-sn', '-dn' ])
     
     encCmd.extend([ '-filter_complex', f'{outFilter}[video]' ])
@@ -147,7 +150,7 @@ def encodeTgSticker(inFile: Path, useOvl: bool, encCrf: int, encFPS: str, encTrm
 # folder
 def configFolder(inPath: Path):
     print(f'\n:: Selected path: {os.path.abspath(inPath)}')
-    print(f'script not usable for dir!')
+    print('script not usable for dir!')
 
 # set folder
 if len(sys.argv) < 2:
@@ -174,14 +177,14 @@ try:
     else:
         print(f':: Input path is not a folder or video file: {inputPath}')
 except Exception as err:
-    print(f'\n:: Something goes wrong...')
+    print('\n:: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
     
     import traceback
     tb_exc = traceback.format_tb(err.__traceback__)
     
     for tb_line in tb_exc:
-        if not tb_line.startswith(f'  File "<frozen os>"'):
+        if not tb_line.startswith('  File "<frozen os>"'):
             print(f':: {tb_line.strip()}')
 
 # end

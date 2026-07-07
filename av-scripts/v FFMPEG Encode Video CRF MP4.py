@@ -1,27 +1,34 @@
 #!/usr/bin/env python3
 
 import os
-import re
+import subprocess
 import sys
 import time
-import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+from pathlib import Path, PurePath
 
 try:
-    from _encHelper import moduleNotFound
-    from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-    from _encHelper import getMediaData, audioTitle, searchSubsFile
-except ModuleNotFoundError as errorModule:
+    from _encHelper import (
+        IntValidator,
+        PathValidator,
+        audioTitle,
+        boolYN,
+        extVideoFile,
+        fixPath,
+        getMediaData,
+        moduleNotFound,
+        searchSubsFile,
+    )
+except ModuleNotFoundError:
     print(':: EncHelper Not Found...')
     input(':: Press enter to continue...\n')
     exit()
 
 try:
+    from questionary import Choice, ValidationError, Validator
+    from questionary import confirm as qconfirm
     from questionary import press_any_key_to_continue as qpause
-    from questionary import text as qtext, select as qselect, confirm as qconfirm
-    from questionary import Choice, Validator, ValidationError
+    from questionary import select as qselect
+    from questionary import text as qtext
 except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))
     exit()
@@ -36,7 +43,7 @@ def configFile(inFile: Path):
     if len(videoData) < 1:
         print()
         print(f':: Skipping: {PurePath(inFile).name}')
-        print(f':: No video streams!')
+        print(':: No video streams!')
         return
     
     videoInfo = getMediaData(inFile)
@@ -61,9 +68,9 @@ def configFile(inFile: Path):
         encodeAudio = qconfirm('Encode Audio to AAC 192k 2ch (Default=No):', default=False).ask()
         atid = int(audioTrack)
         if encodeAudio:
-            audioCmd = [ '-map', f'0:a:{atid}?', f'-c:a', 'aac', '-cutoff', '0', '-b:a', f'192k', '-ac', '2' ]
+            audioCmd = [ '-map', f'0:a:{atid}?', '-c:a', 'aac', '-cutoff', '0', '-b:a', '192k', '-ac', '2' ]
         else:
-            audioCmd = [ '-map', f'0:a:{atid}?', f'-c:a', 'copy' ]
+            audioCmd = [ '-map', f'0:a:{atid}?', '-c:a', 'copy' ]
     
     vTitle = qtext('Set Video Title:').ask()
     
@@ -97,7 +104,7 @@ def configFile(inFile: Path):
     encCmd.extend([ '-flags:v', '+bitexact' ])
     encCmd.extend([ '-flags:a', '+bitexact' ])
     
-    encCmd.extend([ '-i', inFile ]);
+    encCmd.extend([ '-i', inFile ])
     if audioTrack == '-1':
         encCmd.extend([ '-an' ])
     encCmd.extend([ '-sn', '-dn' ])
@@ -129,7 +136,7 @@ def configFile(inFile: Path):
 # folder
 def configFolder(inPath: Path):
     print(f'\n:: Selected path: {os.path.abspath(inPath)}')
-    print(f'script not usable for dir!')
+    print('script not usable for dir!')
 
 # set folder
 if len(sys.argv) < 2:
@@ -156,7 +163,7 @@ try:
     else:
         print(f':: Input path is not a folder or video file: {inputPath}')
 except Exception as err:
-    print(f':: Something goes wrong...')
+    print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
 
 # end

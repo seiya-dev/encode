@@ -2,25 +2,20 @@
 
 # set libs
 import os
-import re
-import sys
-import json
-import time
 import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+import sys
+from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, Validator, ValidationError
+    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-from _encHelper import getMediaData, getMKVData, audioTitle, searchSubsFile
+from _encHelper import PathValidator, getMKVData
+
 
 def extractFile(file: Path):
     # get mkv data
@@ -88,7 +83,7 @@ try:
     else:
         extractFolder(inputPath)
 except Exception as err:
-    print(f':: Something goes wrong...')
+    print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
     print(err)
 

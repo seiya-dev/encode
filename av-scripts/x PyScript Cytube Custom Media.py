@@ -2,6 +2,7 @@ import json
 import os
 from urllib.parse import quote
 
+
 def encode_url_path(url: str) -> str:
     if "://" in url:
         protocol, path = url.split("://", 1)

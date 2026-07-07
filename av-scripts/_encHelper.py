@@ -1,19 +1,16 @@
+import argparse
 import io
+import json
 import os
 import re
-import sys
-import json
-import zlib
 import struct
-import argparse
 import subprocess
-
-from typing import List
-from pathlib import Path
-from pathlib import PurePath
-
+import sys
+import zlib
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
+from pathlib import Path, PurePath
+from typing import Any
+
 
 def moduleNotFound(text: str) -> str:
     fmodule = re.search(r'\'(.*)\'', text)
@@ -43,9 +40,9 @@ def set_console_title(title: str):
         sys.stdout.flush()
 
 try:
-    from questionary import Choice, Validator, ValidationError
-    from PIL import Image
     import numpy as np
+    from PIL import Image
+    from questionary import Choice
 except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))
     exit()
@@ -143,7 +140,7 @@ STD_RESOLUTIONS = [
     ResolutionStandard("2.35:1 4096w", 4096, 1740),
 ]
 
-def classify_video_resolution(width: int, height: int) -> Dict[str, Any]:
+def classify_video_resolution(width: int, height: int) -> dict[str, Any]:
     if width <= 0 or height <= 0:
         raise ValueError("Width and height must be positive integers.")
     
@@ -163,7 +160,7 @@ def classify_video_resolution(width: int, height: int) -> Dict[str, Any]:
     MAX_HEIGHT_REL_DIFF = 0.25   # 25% height difference allowed
     MAX_AR_REL_DIFF = 0.12       # 12% aspect ratio difference allowed
     
-    best_match: Optional[ResolutionStandard] = None
+    best_match: ResolutionStandard | None = None
     best_score = float("inf")
     
     for std in STD_RESOLUTIONS:
@@ -274,7 +271,7 @@ def getMediaData(inputPath: Path, streamType: str = '', showLog: bool = False) -
     
     lwiCreate = re.search(r'^Creating lwi index file .*', result, flags=re.M)
     if lwiCreate:
-        print(f'[:info:] LWI Index file created!')
+        print('[:info:] LWI Index file created!')
     if showLog:
         libassLog = re.findall(r'^libass: .*', result, flags=re.M)
         if libassLog:
@@ -304,7 +301,7 @@ def getMediaData(inputPath: Path, streamType: str = '', showLog: bool = False) -
 def audioTitle(audioData: dict, trackId: int, returnCodec: bool = False) -> str:
     a = audioData[trackId]
     
-    if not 'codec_name' in a and 'codec_tag_string' in a:
+    if 'codec_name' not in a and 'codec_tag_string' in a:
         a['codec_name'] = a['codec_tag_string']
     
     t        = a['tags']       if 'tags'       in a else dict()
@@ -323,7 +320,7 @@ def audioTitle(audioData: dict, trackId: int, returnCodec: bool = False) -> str:
 def subsTitle(subsData: dict, trackId: int, returnCodec: bool = False) -> str:
     s = subsData[trackId]
     
-    if not 'codec_name' in s and 'codec_tag_string' in s:
+    if 'codec_name' not in s and 'codec_tag_string' in s:
         s['codec_name'] = s['codec_tag_string']
     
     t      = s['tags']       if 'tags'       in s else dict()
@@ -468,7 +465,7 @@ class APNG:
         self.height = 0
         self.num_plays = 0
         self.play_time = 0
-        self.frames: List[Frame] = []
+        self.frames: list[Frame] = []
 class APNGFrame:
     def __init__(self):
         self.left = 0

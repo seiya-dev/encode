@@ -5,17 +5,16 @@ import sys
 from pathlib import Path
 
 try:
-    from _encHelper import moduleNotFound
-    from _encHelper import PathValidator
-except ModuleNotFoundError as errorModule:
+    from _encHelper import PathValidator, moduleNotFound
+except ModuleNotFoundError:
     print(':: EncHelper Not Found...')
     input(':: Press enter to continue...\n')
     exit()
 
 try:
-    from questionary import text as qtext
-    from questionary import press_any_key_to_continue as qpause
     from Crypto.Hash import MD4
+    from questionary import press_any_key_to_continue as qpause
+    from questionary import text as qtext
     from tqdm import tqdm
 except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))

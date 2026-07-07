@@ -1,25 +1,21 @@
 #!/usr/bin/env python3
 
 import os
-import re
-import sys
-import time
-import tempfile
 import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+import sys
+import tempfile
+import time
+from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, Validator, ValidationError
+    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-from _encHelper import getMediaData, audioTitle, searchMedia, searchSubsFile
+from _encHelper import PathValidator, searchMedia
 
 inputTypesVideo = ['.264', '.h264', '.avc', '.m4v', '.mp4', '.avi']
 inputTypesAudio = ['.aac', '.m4a', '.mp3', '.mp4', '.avi']
@@ -44,7 +40,7 @@ def configFile(inFile: Path):
     extAudioList = searchMedia(outFolder, prefix, inputTypesAudio)
     for audioFile in extAudioList:
         audioList.append(Choice(f'[audio]: {audioFile.name}', value=audioFile.path))
-    audioList.append(Choice(f'[audio]: no audio', value=''))
+    audioList.append(Choice('[audio]: no audio', value=''))
     
     videoTitle = ''
     if inputTypesVideo.count(fileExt) > 0:
@@ -94,7 +90,7 @@ def configFile(inFile: Path):
 # folder
 def configFolder(inPath: Path):
     print(f'\n:: Selected path: {os.path.abspath(inPath)}')
-    print(f'script not usable for dir!')
+    print('script not usable for dir!')
 
 # set folder
 if len(sys.argv) < 2:
@@ -121,7 +117,7 @@ try:
     else:
         print(f':: Input path is not a folder or video/audio file: {inputPath}')
 except Exception as err:
-    print(f':: Something goes wrong...')
+    print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
 
 # end

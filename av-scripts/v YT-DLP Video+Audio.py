@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 import os
-import re
-import sys
 import subprocess
 
 try:
+    from questionary import Choice, ValidationError, Validator
+    from questionary import confirm as qconfirm
     from questionary import press_any_key_to_continue as qpause
-    from questionary import text as qtext, select as qselect, confirm as qconfirm
-    from questionary import Choice, Validator, ValidationError
+    from questionary import select as qselect
+    from questionary import text as qtext
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
@@ -32,8 +32,8 @@ def configInput():
         configInput()
         return
     
-    print(f'\n:: Format Exampe: bv*[height>=720][ext=mp4][vcodec^=avc1][protocol*=m3u8]+ba*[ext=m4a]')
-    print(f':: Format Exampe: bestvideo[ext=mp4],bestaudio[ext=m4a]/best[ext=mp4]/best')
+    print('\n:: Format Exampe: bv*[height>=720][ext=mp4][vcodec^=avc1][protocol*=m3u8]+ba*[ext=m4a]')
+    print(':: Format Exampe: bestvideo[ext=mp4],bestaudio[ext=m4a]/best[ext=mp4]/best')
     vformat = qtext(':: Video/Audio Format:').ask()
     ytCmd.extend(['--format', vformat])
     
@@ -71,7 +71,7 @@ try:
 except FileNotFoundError:
     print(':: ERROR: YT-DLP Not Installed!')
 except Exception as err:
-    print(f':: Something goes wrong...')
+    print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
 
 # end

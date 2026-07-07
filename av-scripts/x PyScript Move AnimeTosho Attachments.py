@@ -1,22 +1,12 @@
 #!/usr/bin/env python3
 
-import sys
 import os
-import re
 import shutil
-
-from pathlib import Path
-from pathlib import PurePath
-
-import time
-import subprocess
+import sys
 
 print('NOTE: attachments folder should be sub folder!')
 
-if len(sys.argv) < 2:
-    inDir = input(':: Dir: ')
-else:
-    inDir = sys.argv[1]
+inDir = input(':: Dir: ') if len(sys.argv) < 2 else sys.argv[1]
 
 inDirAtt = os.path.abspath(f'{inDir}/attachments/')
 outDirFonts = os.path.abspath(f'{inDir}/fonts/')
@@ -31,7 +21,7 @@ extFonts = ['.ttf', '.ttc', '.otf', '.woff', '.woff2']
 extSubs  = ['.ass', '.srt']
 extXml   = ['.xml']
 
-for root, dirs, files in os.walk(inDirAtt):
+for root, _, files in os.walk(inDirAtt):
     for file in files:
         if file.lower().endswith(tuple(extFonts)):
             src = os.path.join(os.path.sep, root, file)
@@ -39,7 +29,7 @@ for root, dirs, files in os.walk(inDirAtt):
             print(f':: {src} -> {out}')
             shutil.move(src, out)
 
-for root, dirs, files in os.walk(inDirAtt):
+for root, _, files in os.walk(inDirAtt):
     for file in files:
         if file.lower().endswith(tuple(extSubs)):
             src = os.path.join(os.path.sep, root, file)
@@ -48,7 +38,7 @@ for root, dirs, files in os.walk(inDirAtt):
             print(f':: {src} -> {out}')
             shutil.move(src, out)
 
-for root, dirs, files in os.walk(inDirAtt):
+for root, _, files in os.walk(inDirAtt):
     for file in files:
         if file.lower().endswith(tuple(extXml)):
             src = os.path.join(os.path.sep, root, file)
@@ -59,5 +49,5 @@ for root, dirs, files in os.walk(inDirAtt):
 
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     input('\n:: Press any key to continue...\n')
