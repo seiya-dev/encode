@@ -57,10 +57,10 @@ def hashFile(file_path: Path):
 
 def checkFolder(inputPath: Path):
     print(f':: Selected path: {inputPath}\n')
-    hashes = list()
+    hashes = []
     
     if os.path.isdir(inputPath):
-        for dirpath, dirnames, filenames in os.walk(inputPath):
+        for dirpath, _dirnames, filenames in os.walk(inputPath):
             for file in filenames:
                 if Path(file).suffix.lower() in ALLOWED_EXT:
                     get_hash = hashFile(Path(dirpath, file))
@@ -89,5 +89,5 @@ else:
     checkFolder(inputPath)
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     qpause(message = '\n:: Press enter to continue...\n').ask()

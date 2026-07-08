@@ -8,7 +8,6 @@ from pathlib import Path
 
 try:
     import questionary
-    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
@@ -33,10 +32,7 @@ else:
 # check path
 try:
     if not os.path.isdir(inputPath):
-        if os.path.isfile(inputPath):
-            extractFile(inputPath)
-        else:
-            print(f':: Path is not a folder: "{inputPath}"!')
+        print(f':: Path is not a folder: "{inputPath}"!')
     else:
         extractFolder(inputPath)
 except Exception as err:
@@ -45,5 +41,5 @@ except Exception as err:
     print(err)
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()

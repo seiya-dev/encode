@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-from pathlib import Path
+import json
+import mimetypes
+import shutil
 import subprocess
 import sys
-import shutil
-import mimetypes
 import tempfile
-import json
+from pathlib import Path
+
 import questionary
 
 

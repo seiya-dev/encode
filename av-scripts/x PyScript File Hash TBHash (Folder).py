@@ -43,7 +43,7 @@ def hash_file(file_path, file_size):
     md5slice = hashlib.md5()
     md5etag = ''
     
-    chunk_hashes = list()
+    chunk_hashes = []
     slice_ready = False
     chunk_buf = bytearray()
     chunk_accum = 0
@@ -114,7 +114,7 @@ def checkFolder(inputPath: Path):
     if os.path.isdir(inputPath):
         files = []
         
-        for dirpath, dirnames, filenames in os.walk(inputPath):
+        for dirpath, _dirnames, filenames in os.walk(inputPath):
             for file in filenames:
                 if Path(file).suffix.lower() in ALLOWED_EXT:
                     files.append(Path(dirpath, file))
@@ -151,5 +151,5 @@ else:
     checkFolder(inputPath)
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     qpause(message = '\n:: Press enter to continue...\n').ask()

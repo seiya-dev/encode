@@ -10,7 +10,6 @@ from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
@@ -84,7 +83,7 @@ def encodeTgSticker(inFile: Path, useOvl: bool, encCrf: int, encFPS: str, encTrm
     outFileFx = f'{outFolder}/{PurePath(inFile).stem} [tg crf-{encCrf}-fix].webm'
     outFilter = videoFilterGen(useOvl)
     
-    encCmd = list()
+    encCmd = []
     encCmd.extend([ r'ffmpeg', '-hide_banner', ])
     encCmd.extend([ '-loglevel', 'error', '-stats', ])
     encCmd.extend([ '-hwaccel', 'auto', ])
@@ -108,13 +107,11 @@ def encodeTgSticker(inFile: Path, useOvl: bool, encCrf: int, encFPS: str, encTrm
     
     if FloatValidatorP(encFPS):
         encCmd.extend([ '-r', encFPS ])
-        if not filterTest:
-            print(f':: FPS Changed to {encFPS}')
+        print(f':: FPS Changed to {encFPS}')
     
     if FloatValidatorP(encTrm):
         encCmd.extend([ '-t', encTrm ])
-        if not filterTest:
-            print(f':: Trimmed to {encTrm}')
+        print(f':: Trimmed to {encTrm}')
     
     print(f':: Trying Encode File With CRF {encCrf}')
     encCmd.extend([ outFile ])
@@ -132,20 +129,20 @@ def encodeTgSticker(inFile: Path, useOvl: bool, encCrf: int, encFPS: str, encTrm
     
     if not os.path.isfile(outFileFx):
         stickData = getMediaData(outFile)
-        if 'format' in stickData and 'duration' in stickData['format']:
-            if float(stickData['format']['duration']) > 3:
-                shutil.copy(outFile, outFileFx)
-                
-                file = open(outFileFx, 'r+b')
+        if 'format' in stickData and 'duration' in stickData['format'] and float(stickData['format']['duration']) > 3:
+            shutil.copy(outFile, outFileFx)
+            
+            with open(outFileFx, "r+b") as file:
                 content = file.read()
-                offset = content.find(b'\x44\x89')
+                offset = content.find(b"\x44\x89")
                 
                 if offset > -1:
                     file.seek(offset + 2)
                     elSize = file.read(1)
-                    if elSize == b'\x88':
+                    
+                    if elSize == b"\x88":
                         # 8 bytes double float
-                        file.write(struct.pack('>d', 3000))
+                        file.write(struct.pack(">d", 3000))
 
 # folder
 def configFolder(inPath: Path):
@@ -188,5 +185,5 @@ except Exception as err:
             print(f':: {tb_line.strip()}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()

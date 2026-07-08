@@ -75,10 +75,7 @@ def PathValidator(text: str) -> bool:
 # check y/n
 def boolYN(text: str) -> bool:
     text = str(text).lower().strip()
-    if len(text) > 0 and text[0] == 'y':
-        return True
-    else:
-        return False
+    return bool(len(text) > 0 and text[0] == 'y')
 
 # fix paths
 def fixPath(inFile: Path, forFFmpeg: bool = False):
@@ -221,10 +218,10 @@ def classify_video_resolution(width: int, height: int) -> dict[str, Any]:
 def searchMedia(inputPath: Path, prefixName: str, extFilter: list) -> list:
     inputPath = str(inputPath)
     
-    fsList = list()
+    fsList = []
     baseLevel = len(inputPath.split(os.path.sep))
     
-    for root, dirs, files in os.walk(inputPath):
+    for root, _dirs, files in os.walk(inputPath):
         curLevel = len(root.split(os.path.sep))
         if curLevel < baseLevel + 3:
             for file in files:
@@ -254,7 +251,7 @@ def getMediaInfo(inputPath: Path) -> dict:
 
 # get data from video file
 def getMediaData(inputPath: Path, streamType: str = '', showLog: bool = False) -> dict:
-    ffProbeCmd = list()
+    ffProbeCmd = []
     ffProbeCmd.extend([ r'ffprobe', '-v', 'error', '-hide_banner', ])
     ffProbeCmd.extend([ '-print_format', 'json', '-show_format', '-show_streams', ])
     if streamType != '':
@@ -266,7 +263,7 @@ def getMediaData(inputPath: Path, streamType: str = '', showLog: bool = False) -
     
     try:
         result = result.decode('utf-8')
-    except:
+    except Exception:
         result = result.decode('ISO-8859-1')
     
     lwiCreate = re.search(r'^Creating lwi index file .*', result, flags=re.M)
@@ -291,10 +288,10 @@ def getMediaData(inputPath: Path, streamType: str = '', showLog: bool = False) -
     
     try:
         result = json.loads(result)
-    except:
+    except Exception:
         print(':: FAILED TO GET MEDIA DATA')
     
-    result = result if 'streams' in result else {'streams':list()}
+    result = result if 'streams' in result else {'streams':[]}
     result = result if streamType == '' else result['streams']
     return result
 
@@ -304,11 +301,11 @@ def audioTitle(audioData: dict, trackId: int, returnCodec: bool = False) -> str:
     if 'codec_name' not in a and 'codec_tag_string' in a:
         a['codec_name'] = a['codec_tag_string']
     
-    t        = a['tags']       if 'tags'       in a else dict()
-    codec    = a['codec_name'] if 'codec_name' in a else 'UNK_CODEC'
-    channels = a['channels']   if 'channels'   in a else '?'
-    lang     = t['language']   if 'language'   in t else 'UNK'
-    title    = t['title']      if 'title'      in t else 'NO_TITLE'
+    t        = a.get('tags', {})
+    codec    = a.get('codec_name', 'UNK_CODEC')
+    channels = a.get('channels', '?')
+    lang     = t.get('language', 'UNK')
+    title    = t.get('title', 'NO_TITLE')
     
     tname = f'{codec} {channels}ch {lang} {title}'.strip()
     
@@ -323,10 +320,10 @@ def subsTitle(subsData: dict, trackId: int, returnCodec: bool = False) -> str:
     if 'codec_name' not in s and 'codec_tag_string' in s:
         s['codec_name'] = s['codec_tag_string']
     
-    t      = s['tags']       if 'tags'       in s else dict()
-    codec  = s['codec_name'] if 'codec_name' in s else 'UNK_CODEC'
-    lang   = t['language']   if 'language'   in t else 'UNK'
-    title  = t['title']      if 'title'      in t else 'NO_TITLE'
+    t      = s.get('tags', {})
+    codec  = s.get('codec_name', 'UNK_CODEC')
+    lang   = t.get('language', 'UNK')
+    title  = t.get('title', 'NO_TITLE')
     
     tname = f'{lang} {title} #{codec}'.strip()
     
@@ -347,8 +344,8 @@ def searchSubsFile(inputPath: Path, searchExtSubsFile: list = extSubsFile):
     inFileExt = str(PurePath(inputPath).suffix.lower())
     
     fileIdx = -1
-    subsData.sel = list()
-    subsData.inf = dict()
+    subsData.sel = []
+    subsData.inf = {}
     
     if inFileExt == '.mkv':
         subsDataMKV = getMediaData(inputPath, 's')
@@ -402,10 +399,14 @@ def trim_img(img, threshold=19):
 
 # png header
 PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
-class NotPNGError(Exception): pass
-class NotAPNGError(Exception): pass
-def is_not_png(err): return isinstance(err, NotPNGError)
-def is_not_apng(err): return isinstance(err, NotAPNGError)
+class NotPNGError(Exception):
+    pass
+class NotAPNGError(Exception):
+    pass
+def is_not_png(err):
+    return isinstance(err, NotPNGError)
+def is_not_apng(err):
+    return isinstance(err, NotAPNGError)
 
 # iphone png to standart png
 def strip_cgbi_and_fix_png(buffer: bytes, remove_alpha_premult: bool = True) -> bytes:
@@ -465,7 +466,7 @@ class APNG:
         self.height = 0
         self.num_plays = 0
         self.play_time = 0
-        self.frames: list[Frame] = []
+        self.frames: list[APNGFrame] = []
 class APNGFrame:
     def __init__(self):
         self.left = 0

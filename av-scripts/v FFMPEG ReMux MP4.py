@@ -9,13 +9,13 @@ from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, ValidationError, Validator
+    from questionary import Choice
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import audioTitle, extVideoFile, fixPath, getMediaData
+from _encHelper import audioTitle, extVideoFile, getMediaData
 
 extAudioFile = ['.aac']
 
@@ -23,7 +23,6 @@ extAudioFile = ['.aac']
 def configFile(inFile: Path):
     outFolder = PurePath(inFile).parent
     outFile   = f'{outFolder}/{PurePath(inFile).stem} [remux]'
-    inFonts = fixPath(f'{outFolder}/fonts', True)
     
     noVideo = False
     
@@ -34,7 +33,7 @@ def configFile(inFile: Path):
     else:
         outFile = f'{outFile}.mp4'
     
-    audioList = list()
+    audioList = []
     audioData = getMediaData(inFile, 'a')
     for t in range(len(audioData)):
         tname = audioTitle(audioData, t)
@@ -54,7 +53,7 @@ def configFile(inFile: Path):
     
     vTitle = questionary.text('Set Video Title:').ask()
     
-    encCmd = list()
+    encCmd = []
     encCmd.extend([ r'ffmpeg', '-hide_banner', ])
     encCmd.extend([ '-loglevel', 'error', '-stats', ])
     encCmd.extend([ '-hwaccel', 'auto', ])
@@ -89,10 +88,7 @@ def configFolder(inPath: Path):
     print('script not usable for dir!')
 
 # set folder
-if len(sys.argv) < 2:
-    inputPath = input(':: Folder/File: ').strip('\"')
-else:
-    inputPath = sys.argv[1]
+inputPath = input(':: Folder/File: ').strip('"') if len(sys.argv) < 2 else sys.argv[1]
 
 # to abs path
 inputPath = os.path.abspath(inputPath)
@@ -123,5 +119,5 @@ except Exception as err:
             print(f':: {tb_line.strip()}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()

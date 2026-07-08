@@ -9,7 +9,7 @@ from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, ValidationError, Validator
+    from questionary import Choice
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
@@ -20,7 +20,7 @@ from _encHelper import PathValidator, searchMedia
 inputTypesVideo = ['.264', '.h264', '.avc', '.m4v', '.mp4', '.avi']
 inputTypesAudio = ['.aac', '.m4a', '.mp3', '.mp4', '.avi']
 
-inputTypes = list()
+inputTypes = []
 inputTypes.extend(inputTypesVideo)
 inputTypes.extend(inputTypesAudio)
 
@@ -33,7 +33,7 @@ def configFile(inFile: Path):
     tempPath  = tempfile.gettempdir()
     
     audioFile = ''
-    audioList = list()
+    audioList = []
     if ['.mp4', '.avi'].count(fileExt) > 0:
         audioList.append(Choice(f'[audio]: {prefix}{fileExt}', value=inFile))
     
@@ -59,7 +59,7 @@ def configFile(inFile: Path):
         if audioFile != '':
             audioLang = questionary.text('Set Audio Language (ISO 639-2):').ask()
     
-    mp4box = list()
+    mp4box = []
     mp4box.extend(['mp4box', '-for-test'])
     mp4box.extend(['-tmp', tempPath])
     mp4box.extend(['-brand', 'mp42'])
@@ -121,5 +121,5 @@ except Exception as err:
     print(f':: {type(err).__name__}: {err}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()

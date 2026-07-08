@@ -9,7 +9,6 @@ from pathlib import Path, PurePath
 try:
     import questionary
     from _encHelper import PathValidator
-    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
@@ -18,12 +17,6 @@ except ModuleNotFoundError:
 print(':: Convert Subtitles SRT to ASS ::')
 ASS_HEADER = """[Script Info]
 Title: Default
-Original Translation: 
-Original Editing: 
-Original Timing: 
-Synch Point: 
-Script Updated By: 
-Update Details: 
 ScriptType: v4.00+
 PlayResX: 640
 PlayResY: 360
@@ -47,7 +40,7 @@ def to_ms(h, m, s, ms):
 
 def ms_to_ass_time(ms):
     # ASS wants H:MM:SS.cc (centiseconds)
-    cs = int(round(ms / 10.0))
+    cs = round(ms / 10.0)
     h = cs // (100 * 3600)
     cs %= 100 * 3600
     m = cs // (100 * 60)
@@ -132,7 +125,7 @@ def build_dialogue_line(start_ms, end_ms, raw_lines):
     # Layer, Start, End, Style, Name, ML, MR, MV, Effect, Text
     return f'Dialogue: 0,{start},{end},Default,,0,0,0,,{ass_text}'
 
-def convert_srt_path(srt_path: Path, out_path: Path = None):
+def convert_srt_path(srt_path: Path, out_path: Path | None = None):
     content = srt_path.read_text(encoding='utf-8', errors='replace')
     events = srt_to_events(content)
     lines = [ASS_HEADER]
@@ -177,5 +170,5 @@ except Exception as err:
     print(f':: {type(err).__name__}: {err}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()

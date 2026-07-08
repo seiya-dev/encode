@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
 
 import os
-import re
+import subprocess
 import sys
 import time
-import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, Separator, Validator, ValidationError
+    from questionary import Choice, Separator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import PathValidator
-from _encHelper import getMediaData, audioTitle, searchSubsFile
+from _encHelper import PathValidator, audioTitle, getMediaData, searchSubsFile
 
 # acceptable extensions
 extVideoFile = ['.mkv', '.mp4', '.avi']
@@ -40,26 +36,26 @@ def doEncode(inFile: Path, pspEncoderMode: int, pspEncoderQuality: str,
     if len(videoData) < 1:
         print()
         print(f':: Skipping: {PurePath(inFile).name}')
-        print(f':: No video streams!')
+        print(':: No video streams!')
         return
     
-    os.environ['_cachePath'] = os.path.join(tempFolder, PurePath(inFile).name)
-    os.environ['_inputFile'] = inFile
+    os.environ['_CACHEPATH'] = os.path.join(tempFolder, PurePath(inFile).name)
+    os.environ['_INPUTFILE'] = inFile
     
-    os.environ['_subsFile'] = ''
-    os.environ['_fontsDir'] = fontsFolder
+    os.environ['_SUBSFILE'] = ''
+    os.environ['_FONTSDIR'] = fontsFolder
     
-    os.environ['_avsOutput']  = 'video'
-    os.environ['_pspEncMode'] = str(pspEncoderMode)
-    os.environ['_pspAnamorph'] = str(pspEncoderMode - 2) if anamorphMode else '0'
+    os.environ['_AVSOUTPUT']  = 'video'
+    os.environ['_PSPENCMODE'] = str(pspEncoderMode)
+    os.environ['_PSPANAMORPH'] = str(pspEncoderMode - 2) if anamorphMode else '0'
     
-    os.environ['_outFile'] = str(os.path.join(pspFolder, f'{PurePath(inFile).stem} [PSP]'))
+    os.environ['_OUTFILE'] = str(os.path.join(pspFolder, f'{PurePath(inFile).stem} [PSP]'))
     
     if subsTrack != '-1':
         subsData = inSubs.inf[subsTrack]
-        os.environ['_subsFile'] = subsData['file']
+        os.environ['_SUBSFILE'] = subsData['file']
     
-    encCmd = list()
+    encCmd = []
     encCmd.extend([ r'ffmpeg', '-hide_banner', ])
     encCmd.extend([ '-loglevel', 'error', '-stats', ])
     encCmd.extend([ '-hwaccel', 'auto', ])
@@ -67,14 +63,14 @@ def doEncode(inFile: Path, pspEncoderMode: int, pspEncoderQuality: str,
     encCmd.extend([ '-flags:v', '+bitexact' ])
     encCmd.extend([ '-flags:a', '+bitexact' ])
     
-    x264Params = list()
+    x264Params = []
     vSar = ''
     
     if videoPar not in ('1:1', 'auto'):
         vSar = f':sar={videoPar}'
     
     if pspEncoderQuality == 'd':
-        x264DefParam = (
+        _x264DefParam = (
             f'deblock=1:-1:keyint=240:min-keyint=1:bframes=3:b-adapt=2:b-pyramid=none:ref=3'
             f':qpmin=15:qpmax=22:ipratio=1.35:pbratio=1.25:vbv-bufsize=10000:vbv-maxrate=10000:qcomp=0.75'
             f':rc-lookahead=120:aq-strength=1.0:me=umh:direct=temporal:subme=9:partitions=p8x8,p4x4,b8x8,i4x4'
@@ -86,14 +82,14 @@ def doEncode(inFile: Path, pspEncoderMode: int, pspEncoderQuality: str,
         # x264Params.extend(['-x264-params', x264DefParam])
     
     if pspEncoderQuality == 'v':
-        x264DefParam = f'b-pyramid=none:vbv-bufsize=10000:vbv-maxrate=10000{vSar}'
+        _x264DefParam = f'b-pyramid=none:vbv-bufsize=10000:vbv-maxrate=10000{vSar}'
         x264Params.extend(['-c:v', 'libx264', '-pix_fmt', 'yuv420p'])
         x264Params.extend(['-profile:v', 'main', '-level:v', '3.0', '-tune:v', 'animation'])
         x264Params.extend(['-preset:v', 'veryfast', '-b:v', '512k'])
         # x264Params.extend(['-x264-params', x264DefParam])
     
     if pspEncoderQuality == 's':
-        x264DefParam = f'b-pyramid=none:vbv-bufsize=10000:vbv-maxrate=10000{vSar}'
+        _x264DefParam = f'b-pyramid=none:vbv-bufsize=10000:vbv-maxrate=10000{vSar}'
         x264Params.extend(['-c:v', 'libx264', '-pix_fmt', 'yuv420p'])
         x264Params.extend(['-profile:v', 'main', '-level:v', '3.0', '-tune:v', 'animation'])
         x264Params.extend(['-preset:v', 'superfast', '-b:v', '512k'])
@@ -113,17 +109,17 @@ def doEncode(inFile: Path, pspEncoderMode: int, pspEncoderQuality: str,
     encCmd.extend([ '-map', '0:v:0' ])
     encCmd.extend(x264Params)
     
-    audioCmd = list()
+    audioCmd = []
     atrack = audioTrack.split(':')
-    audioCmd.extend([ '-map', f'1:a:{atrack[1]}?', f'-c:a' ])
+    audioCmd.extend([ '-map', f'1:a:{atrack[1]}?', '-c:a' ])
     if encAudio:
-        audioCmd.extend([ 'aac', '-cutoff', '0', '-b:a', f'192k', '-ac', '2' ])
+        audioCmd.extend([ 'aac', '-cutoff', '0', '-b:a', '192k', '-ac', '2' ])
     else:
         audioCmd.extend([ 'copy' ])
     
     encCmd.extend(audioCmd)
     encCmd.extend([ '-map_metadata', '-1', '-map_chapters', '-1' ])
-    encCmd.extend([ f'{os.environ['_outFile']}.mp4' ])
+    encCmd.extend([ f'{os.environ['_OUTFILE']}.mp4' ])
     
     startTime = time.monotonic()
     subprocess.run(encCmd)
@@ -131,14 +127,14 @@ def doEncode(inFile: Path, pspEncoderMode: int, pspEncoderQuality: str,
     runTime = time.monotonic() - startTime
     hours, rem = divmod(runTime, 3600)
     minutes, seconds = divmod(rem, 60)
-    print(f'\n:: Encoded {PurePath(os.environ['_outFile']).name} in {hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}')
+    print(f'\n:: Encoded {PurePath(os.environ['_OUTFILE']).name} in {hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}')
 
 # folder
 def configEncoder(inPath: Path):
     subDirsPath = inPath
     
     if os.path.isfile(inPath):
-        subDirsPath = os.path.abspath(str(os.path.dirname(subDirsPath))))
+        subDirsPath = os.path.abspath(str(os.path.dirname(subDirsPath)))
     
     subDirsPath = str(subDirsPath)
     pspDir  = f'{os.path.abspath(subDirsPath)}/PSP Video'
@@ -161,7 +157,7 @@ def configEncoder(inPath: Path):
     if pspEncoderMode < 0:
         return 1
     
-    inFiles = list()
+    inFiles = []
     if os.path.isdir(inPath):
         for file in os.listdir(inPath):
             file = os.path.join(inPath, file)
@@ -202,7 +198,7 @@ def configEncoder(inPath: Path):
                     '2.40:1': { '2': 'auto', '3':'auto',  '4':'auto'  },
                 }
                 
-                sarOptions = list()
+                sarOptions = []
                 for sarItem in list(sarModeData.keys()):
                     sarIndex = len(sarOptions)
                     sarOptionValue = '1:1'
@@ -211,8 +207,8 @@ def configEncoder(inPath: Path):
                     sarOptions.append(Choice(f'{sarIndex}={sarItem}',  value=sarOptionValue))
                 videoPar = questionary.select('Select SAR:', choices = sarOptions).ask()
         
-        audioList = list()
-        audioDict = dict()
+        audioList = []
+        audioDict = {}
         audioData = getMediaData(inFiles[0], 'a')
         
         if len(audioData) < 0:
@@ -230,8 +226,8 @@ def configEncoder(inPath: Path):
         encAudio = False
         if audioTrack != '-1':
             a = audioDict[audioTrack]
-            codec = a['codec_name'] if 'codec_name' in a else 'UNK_CODEC'
-            channels = a['channels'] if 'channels' in a else 5+1
+            codec = a.get('codec_name', 'UNK_CODEC')
+            channels = a.get('channels', 5 + 1)
             if codec != 'aac':
                 encAudio = True
             if channels > 2:
@@ -268,16 +264,16 @@ try:
     else:
         print(f':: Input Path is Not a Folder or Video File: {inputPath}')
 except Exception as err:
-    print(f'\n:: Something goes wrong...')
+    print('\n:: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
     
     import traceback
     tb_exc = traceback.format_tb(err.__traceback__)
     
     for tb_line in tb_exc:
-        if not tb_line.startswith(f'  File "<frozen os>"'):
+        if not tb_line.startswith('  File "<frozen os>"'):
             print(f':: {tb_line.strip()}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()

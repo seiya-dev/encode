@@ -4,7 +4,6 @@ import os
 import subprocess
 
 try:
-    from questionary import Choice, ValidationError, Validator
     from questionary import confirm as qconfirm
     from questionary import press_any_key_to_continue as qpause
     from questionary import select as qselect
@@ -18,7 +17,7 @@ except ModuleNotFoundError:
 def configInput():
     input_url = qtext(':: Input URL:').ask()
     
-    ytCmd = list()
+    ytCmd = []
     cookiePath = os.path.expanduser('~/.config/yt-dlp-cookies.txt')
     ytCmd.extend([ r'yt-dlp', '--cookies', cookiePath ])
     
@@ -75,5 +74,5 @@ except Exception as err:
     print(f':: {type(err).__name__}: {err}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     qpause(message = '\n:: Press enter to continue...\n').ask()

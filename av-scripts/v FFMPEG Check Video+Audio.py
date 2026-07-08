@@ -8,20 +8,19 @@ from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import PathValidator, extVideoFile
+from _encHelper import PathValidator, extAudioFile, extVideoFile
 
 
 # file
 def configFile(inFile: Path):
     print(f'\n:: Checking: {PurePath(inFile).name}')
     
-    encCmd = list()
+    encCmd = []
     encCmd.extend([ r'ffmpeg', '-hide_banner', ])
     encCmd.extend([ '-loglevel', 'error', '-stats', ])
     encCmd.extend([ '-hwaccel', 'auto', ])
@@ -38,7 +37,7 @@ def configFile(inFile: Path):
 
 # folder
 def configFolder(inPath: Path):
-    inFile = list()
+    inFile = []
     
     for file in os.listdir(inPath):
         file = os.path.join(inPath, file)
@@ -78,5 +77,5 @@ except Exception as err:
     print(f':: {type(err).__name__}: {err}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()

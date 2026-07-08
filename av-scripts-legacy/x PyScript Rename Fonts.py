@@ -1,22 +1,24 @@
+import hashlib
 import os
 import re
-import hashlib
+from collections import defaultdict
+
 import questionary
 from fontTools.ttLib import TTFont
-from collections import defaultdict
+
 
 def get_name_record(font, nameID):
     for record in font['name'].names:
         if record.nameID == nameID and record.platformID == 3 and record.langID == 0x409:
             try:
                 return record.string.decode('utf-16-be')
-            except:
+            except Exception:
                 continue
     for record in font['name'].names:
         if record.nameID == nameID:
             try:
                 return record.string.decode('utf-16-be') if b'\x00' in record.string else record.string.decode('utf-8')
-            except:
+            except Exception:
                 continue
     return None
 
@@ -105,10 +107,9 @@ def rename_fonts_safely(directory):
             duplicate = False
             for existing in seen_names[f"{ps_name}|{version}"]:
                 existing_path = os.path.join(directory, existing)
-                if os.path.exists(existing_path):
-                    if calculate_checksum(existing_path) == file_hash:
-                        duplicate = True
-                        break
+                if os.path.exists(existing_path) and calculate_checksum(existing_path) == file_hash:
+                    duplicate = True
+                    break
             if duplicate:
                 print(f"⏩ Already correctly named: {filename}")
                 continue

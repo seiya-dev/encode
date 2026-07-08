@@ -12,7 +12,6 @@ try:
         IntValidator,
         PathValidator,
         audioTitle,
-        boolYN,
         classify_video_resolution,
         extVideoFile,
         fixPath,
@@ -26,7 +25,7 @@ except ModuleNotFoundError:
     exit()
 
 try:
-    from questionary import Choice, ValidationError, Validator
+    from questionary import Choice
     from questionary import confirm as qconfirm
     from questionary import press_any_key_to_continue as qpause
     from questionary import select as qselect
@@ -93,7 +92,7 @@ def encodeFile(inFile: Path, nvEncCodec: bool, setQuality: str, doDeband: bool, 
         os.makedirs(outFolder, exist_ok=True)
         outFile = os.path.abspath(f'{outFolder}/{outFile}')
         
-        encCmd = list()
+        encCmd = []
         encCmd.extend([ r'ffmpeg', '-hide_banner', ])
         encCmd.extend([ '-loglevel', 'error', '-stats', ])
         encCmd.extend([ '-hwaccel', 'auto', ])
@@ -136,13 +135,13 @@ def encodeFile(inFile: Path, nvEncCodec: bool, setQuality: str, doDeband: bool, 
         vDS = videoData['width'] / videoData['height']
         
         if cVS[0].isdigit() and cVS[1].isdigit():
-            byWidth = True if int(cVS[0]) / vDS <= int(cVS[1]) else False
-            oscale = f'scale={cVS[0]}:-2' if byWidth else f'scale=-2:{cVS[1]}'
-            oscsep = '[v];[v]' if overlay else ','
+            byWidth = int(cVS[0]) / vDS <= int(cVS[1])
+            oscale = f"scale={cVS[0]}:-2" if byWidth else f"scale=-2:{cVS[1]}"
+            oscsep = "[v];[v]" if overlay else ","
             vFilters = f'{vFilters}{oscsep}{oscale}'
         
-        audioCmd = list()
-        extAudio = list()
+        audioCmd = []
+        extAudio = []
         outAudio = ''
         
         if audioTrackIndex != '-1':
@@ -213,7 +212,7 @@ def encodeFile(inFile: Path, nvEncCodec: bool, setQuality: str, doDeband: bool, 
 # config
 def configEncode(inPath: Path):
     # filesArr
-    inFiles = list()
+    inFiles = []
     
     # check if dir
     if os.path.isdir(inPath):
@@ -245,7 +244,7 @@ def configEncode(inPath: Path):
     # ask resizes
     doResize = qconfirm('Do Multiply Qualities (Default=Yes):', default=True).ask()
     
-    audioList = list()
+    audioList = []
     audioData = getMediaData(inFiles[0], 'a')
     for t in range(len(audioData)):
         tname = audioTitle(audioData, t)
@@ -300,5 +299,5 @@ except Exception as err:
             print(f':: {tb_line.strip()}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     qpause(message = '\n:: Press enter to continue...\n').ask()

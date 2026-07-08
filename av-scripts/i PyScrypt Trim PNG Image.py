@@ -7,7 +7,6 @@ from pathlib import Path, PurePath
 try:
     import numpy as np
     from PIL import Image
-    from questionary import Choice, ValidationError, Validator
     from questionary import press_any_key_to_continue as qpause
     from questionary import text as qtext
 except ModuleNotFoundError:
@@ -64,7 +63,7 @@ def configFile(inFile: Path):
 
 # folder
 def configFolder(inPath: Path):
-    inFile = list()
+    inFile = []
     
     for file in os.listdir(inPath):
         file = os.path.join(inPath, file)
@@ -105,5 +104,5 @@ except Exception as err:
     print(f':: {type(err).__name__}: {err}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     qpause(message = '\n:: Press enter to continue...\n').ask()

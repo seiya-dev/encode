@@ -8,7 +8,6 @@ from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
@@ -27,9 +26,9 @@ def extractFile(file: Path):
     print(f'\n:: FILE: {mkvfile}.mkv')
     # set ids
     countTr = { 'video': 0, 'audio': 0, 'subtitles': 0 }
-    namesTr = list()
-    trackTp = dict()
-    trackNm = dict()
+    namesTr = []
+    trackTp = {}
+    trackNm = {}
     # list tracks
     if 'tracks' in result:
         for t in result['tracks']:
@@ -57,7 +56,7 @@ def extractFile(file: Path):
     # select track
     global isFile
     global trackIndex
-    if trackIndex is None or isFile == True:
+    if trackIndex is None or isFile:
         trackIndex = input('\n:: Track Index or Track Name to Extract: ')
     # check
     trackIndexNum = -1
@@ -66,10 +65,7 @@ def extractFile(file: Path):
     if trackIndex in trackNm:
         trackIndexNum = trackNm[trackIndex]
     try:
-        if trackIndexNum > -1:
-            trackIndexNum = int(trackIndexNum)
-        else:
-            trackIndexNum = int(trackIndex)
+        trackIndexNum = int(trackIndexNum) if trackIndexNum > -1 else int(trackIndex)
         if -1 > trackIndexNum > len(result['tracks']):
             trackIndexNum = -1
     except ValueError:
@@ -107,7 +103,7 @@ def extractFile(file: Path):
         output = os.path.join(outdir, f'{PurePath(file).stem}_track{trackIndexNum+1}.{trackExt}')
         mkvExtractCmd = ['mkvextract', '--ui-language', 'en', 'tracks', file, f'{trackIndexNum}:{output}']
         subprocess.run(mkvExtractCmd)
-    if isFile == True:
+    if isFile:
         extractFile(file)
 
 def extractFolder(inputPath: Path):
@@ -143,5 +139,5 @@ except Exception as err:
     print(f':: {type(err).__name__}: {err}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()

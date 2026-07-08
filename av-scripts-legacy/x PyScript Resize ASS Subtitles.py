@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+
 import questionary
 
 TARGET_WIDTH = 1920
@@ -60,7 +61,7 @@ def parse_resolution(lines):
     return res_x, res_y
 
 def process_file(file_path: Path):
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, encoding="utf-8") as f:
         lines = f.readlines()
 
     res_x, res_y = parse_resolution(lines)

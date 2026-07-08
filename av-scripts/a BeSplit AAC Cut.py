@@ -7,7 +7,6 @@ from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, ValidationError, Validator
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
@@ -79,7 +78,7 @@ try:
         fileExt = PurePath(inputPath).suffix.lower()
         if ['.aac'].count(fileExt) > 0:
             print(f':: Input file: {inputPath}')
-            configFile(inputPath)
+            cutFile(inputPath)
         else:
             print(f':: Input file is not a video file: {inputPath}')
     elif os.path.isdir(inputPath):
@@ -92,5 +91,5 @@ except Exception as err:
     print(f':: {type(err).__name__}: {err}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()

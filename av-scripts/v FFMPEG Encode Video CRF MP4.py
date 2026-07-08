@@ -11,7 +11,6 @@ try:
         IntValidator,
         PathValidator,
         audioTitle,
-        boolYN,
         extVideoFile,
         fixPath,
         getMediaData,
@@ -24,7 +23,7 @@ except ModuleNotFoundError:
     exit()
 
 try:
-    from questionary import Choice, ValidationError, Validator
+    from questionary import Choice
     from questionary import confirm as qconfirm
     from questionary import press_any_key_to_continue as qpause
     from questionary import select as qselect
@@ -55,14 +54,14 @@ def configFile(inFile: Path):
     vFilters = '[0:v:0]format=yuv420p'
     encCrf = qtext('Set Encode CRF:', validate=IntValidator, default='20').ask()
     
-    audioList = list()
+    audioList = []
     audioData = getMediaData(inFile, 'a')
     for t in range(len(audioData)):
         tname = audioTitle(audioData, t)
         audioList.append(Choice(f'[{str(t).rjust(2)}]: {tname}', value=t))
     audioList.append(Choice('[-1]: No Audio', value='-1'))
     
-    audioCmd = list()
+    audioCmd = []
     audioTrack = qselect('Select Audio Track:', audioList).ask()
     if audioTrack != '-1':
         encodeAudio = qconfirm('Encode Audio to AAC 192k 2ch (Default=No):', default=False).ask()
@@ -96,7 +95,7 @@ def configFile(inFile: Path):
         comaadd = ',' if not overlay else ''
         vFilters = f'{vFilters}{comaadd}{outsubs}'
     
-    encCmd = list()
+    encCmd = []
     encCmd.extend([ r'ffmpeg', '-hide_banner', ])
     encCmd.extend([ '-loglevel', 'error', '-stats', ])
     encCmd.extend([ '-hwaccel', 'auto', ])
@@ -167,5 +166,5 @@ except Exception as err:
     print(f':: {type(err).__name__}: {err}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     qpause(message = '\n:: Press enter to continue...\n').ask()

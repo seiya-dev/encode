@@ -1,6 +1,8 @@
-from PIL import ImageFont
 import os
 import sys
+
+from PIL import ImageFont
+
 
 def find_system_font_dirs():
     if sys.platform.startswith('win'):

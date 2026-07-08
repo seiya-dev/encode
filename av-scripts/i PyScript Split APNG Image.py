@@ -7,7 +7,6 @@ from pathlib import Path, PurePath
 try:
     import numpy as np
     from PIL import Image
-    from questionary import Choice, ValidationError, Validator
     from questionary import press_any_key_to_continue as qpause
     from questionary import text as qtext
 except ModuleNotFoundError:
@@ -27,7 +26,7 @@ def configFile(inFile: Path):
     print(f':: Processing: {inFile}')
     outPath = inFile.replace('.png', '')
     
-    data = open(inFile, 'rb').read()
+    data = Path(inFile).read_bytes()
     apng = parse_apng(data)
     apng.play_time_sec = apng.play_time / 1000
     apng.frame_cnt = len(apng.frames)
@@ -41,7 +40,7 @@ def configFile(inFile: Path):
     
     merged = create_img(apng.width, apng.height)
     
-    for i, frame in enumerate(apng.frames):
+    for _i, frame in enumerate(apng.frames):
         # frame.data.save(f'{outPath}/frame_{i:04}.png')
         merged = Image.alpha_composite(merged, frame.data)
     
@@ -75,11 +74,11 @@ def configFile(inFile: Path):
     avsTemplate += 'ConvertToPlanarRGBA()\n'
     avsTemplate += 'videoAddPadMod2()\n'
     avsTemplate += 'ConvertToYUV420()\n'
-    open(f'{outPath}.avs', 'w', encoding='utf-8').write(avsTemplate)
+    Path(f'{outPath}.avs').write_text(avsTemplate, encoding='utf-8')
 
 # folder
 def configFolder(inPath: Path):
-    inFile = list()
+    inFile = []
     
     for file in os.listdir(inPath):
         file = os.path.join(inPath, file)
@@ -120,5 +119,5 @@ except Exception as err:
     print(f':: {type(err).__name__}: {err}')
 
 # end
-if os.environ.get('isBatch') is None:
+if os.environ.get('ISBATCH') is None:
     qpause(message = '\n:: Press enter to continue...\n').ask()
