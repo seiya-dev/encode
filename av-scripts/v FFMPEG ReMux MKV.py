@@ -63,7 +63,7 @@ def configFile(inFile: Path):
         
         attData = getMediaData(inFile, 't')
         for t in range(len(attData)):
-            if 'tags' in attData[t] and 'title' in attData[t]['tags'] and 'mimetype' in attData[t]['tags']:
+            if 'tags' in attData[t] and 'filename' in attData[t]['tags'] and 'mimetype' in attData[t]['tags']:
                 tags = attData[t]['tags']
                 subsCmd.extend([ '-map', f'0:t:{t}' ])
                 subsCmd.extend([ f'-metadata:s:t:{t}', f'filename={tags['filename']}' ])
