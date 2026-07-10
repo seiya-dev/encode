@@ -66,7 +66,7 @@ def extractFile(file: Path):
         trackIndexNum = trackNm[trackIndex]
     try:
         trackIndexNum = int(trackIndexNum) if trackIndexNum > -1 else int(trackIndex)
-        if -1 > trackIndexNum > len(result['tracks']):
+        if trackIndexNum < 0 or trackIndexNum >= len(result['tracks']):
             trackIndexNum = -1
     except ValueError:
         trackIndexNum = -1
