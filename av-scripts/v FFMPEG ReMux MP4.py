@@ -19,73 +19,96 @@ from _encHelper import audioTitle, extVideoFile, getMediaData
 
 extAudioFile = ['.aac']
 
+
 # file
 def configFile(inFile: Path):
     outFolder = PurePath(inFile).parent
-    outFile   = f'{outFolder}/{PurePath(inFile).stem} [remux]'
-    
+    outFile = f'{outFolder}/{PurePath(inFile).stem} [remux]'
+
     noVideo = False
-    
+
     videoData = getMediaData(inFile, 'v', True)
     if len(videoData) < 1:
         noVideo = True
         outFile = f'{outFile}.m4a'
     else:
         outFile = f'{outFile}.mp4'
-    
+
     audioList = []
     audioData = getMediaData(inFile, 'a')
     for t in range(len(audioData)):
         tname = audioTitle(audioData, t)
         audioList.append(Choice(f'[{str(t).rjust(2)}]: {tname}', value=t))
-    
+
     if not noVideo:
         audioList.append(Choice('[-1]: No Audio', value='-1'))
-    
+
     if noVideo and len(audioList) < 1:
         return
-    
-    audioCmd = [ '-an' ]
+
+    audioCmd = ['-an']
     audioTrack = questionary.select('Select Audio Track:', audioList).ask()
     if audioTrack != '-1':
         atid = int(audioTrack)
-        audioCmd = [ '-map', f'0:a:{atid}?', '-c:a', 'copy' ]
-    
+        audioCmd = ['-map', f'0:a:{atid}?', '-c:a', 'copy']
+
     vTitle = questionary.text('Set Video Title:').ask()
-    
+
     encCmd = []
-    encCmd.extend([ r'ffmpeg', '-hide_banner', ])
-    encCmd.extend([ '-loglevel', 'error', '-stats', ])
-    encCmd.extend([ '-hwaccel', 'auto', ])
-    encCmd.extend([ '-fflags', '+bitexact', '-flags:v', '+bitexact', '-flags:a', '+bitexact' ])
-    
-    encCmd.extend([ '-i', inFile ])
+    encCmd.extend(
+        [
+            r'ffmpeg',
+            '-hide_banner',
+        ]
+    )
+    encCmd.extend(
+        [
+            '-loglevel',
+            'error',
+            '-stats',
+        ]
+    )
+    encCmd.extend(
+        [
+            '-hwaccel',
+            'auto',
+        ]
+    )
+    encCmd.extend(
+        ['-fflags', '+bitexact', '-flags:v', '+bitexact', '-flags:a', '+bitexact']
+    )
+
+    encCmd.extend(['-i', inFile])
     if not noVideo:
-        encCmd.extend([ '-map', '0:v:0?', '-c:v', 'copy' ])
-    
+        encCmd.extend(['-map', '0:v:0?', '-c:v', 'copy'])
+
     encCmd.extend(audioCmd)
-    encCmd.extend([ '-sn', '-dn' ])
-    
-    encCmd.extend([ '-map_metadata', '-1', '-map_chapters', '-1' ])
-    
+    encCmd.extend(['-sn', '-dn'])
+
+    encCmd.extend(['-map_metadata', '-1', '-map_chapters', '-1'])
+
     if vTitle != '':
-        encCmd.extend([ '-metadata:s:v:0', f'title={vTitle}' ])
-    
+        encCmd.extend(['-metadata:s:v:0', f'title={vTitle}'])
+
     # encCmd.extend([ '-brand', 'mp42' ])
-    encCmd.extend([ outFile ])
-    
+    encCmd.extend([outFile])
+
     startTime = time.monotonic()
     subprocess.run(encCmd)
-    
+
     runTime = time.monotonic() - startTime
     hours, rem = divmod(runTime, 3600)
     minutes, seconds = divmod(rem, 60)
-    print(f'\n:: Remuxed {PurePath(outFile).name} in {hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}')
+    print(
+        f'\n:: Remuxed {PurePath(outFile).name} in {hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}'
+    )
+
 
 # folder
 def configFolder(inPath: Path):
     print(f'\n:: Selected path: {os.path.abspath(inPath)}')
     print('script not usable for dir!')
+
 
 # set folder
 inputPath = input(':: Folder/File: ').strip('"') if len(sys.argv) < 2 else sys.argv[1]
@@ -110,14 +133,17 @@ try:
 except Exception as err:
     print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
-    
+
     import traceback
+
     tb_exc = traceback.format_tb(err.__traceback__)
-    
+
     for tb_line in tb_exc:
         if not tb_line.startswith('  File "<frozen os>"'):
             print(f':: {tb_line.strip()}')
 
 # end
 if os.environ.get('ISBATCH') is None:
-    questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()
+    questionary.press_any_key_to_continue(
+        message='\n:: Press enter to continue...\n'
+    ).ask()

@@ -22,10 +22,11 @@ def extractFolder(inputPath: Path):
     attExtCmd = ['SubtitleEdit', '/convert', f'{absPath}/*.srt', 'webvtt']
     subprocess.run(attExtCmd)
 
+
 # set folder
 if len(sys.argv) < 2:
     inputPath = questionary.text(':: Folder/File: ', validate=PathValidator).ask()
-    inputPath = inputPath.strip('\"')
+    inputPath = inputPath.strip('"')
 else:
     inputPath = sys.argv[1]
 
@@ -42,4 +43,6 @@ except Exception as err:
 
 # end
 if os.environ.get('ISBATCH') is None:
-    questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()
+    questionary.press_any_key_to_continue(
+        message='\n:: Press enter to continue...\n'
+    ).ask()

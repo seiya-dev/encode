@@ -18,8 +18,8 @@ os.makedirs(outDirSubs, exist_ok=True)
 os.makedirs(outDirXML, exist_ok=True)
 
 extFonts = ['.ttf', '.ttc', '.otf', '.woff', '.woff2']
-extSubs  = ['.ass', '.srt']
-extXml   = ['.xml']
+extSubs = ['.ass', '.srt']
+extXml = ['.xml']
 
 for root, _, files in os.walk(inDirAtt):
     for file in files:

@@ -18,8 +18,9 @@ try:
     from _encHelper import PathValidator, trim_img
 except ModuleNotFoundError:
     print(':: Encode Helper is MISSING...')
-    qpause(message = ':: Press enter to continue...\n').ask()
+    qpause(message=':: Press enter to continue...\n').ask()
     exit()
+
 
 def configFile(inFile: Path):
     # Open the PNG image
@@ -43,7 +44,7 @@ def configFile(inFile: Path):
 
     # Trim the transparent edges
     trimmed_img, (offset_x, offset_y) = trim_img(cleaned_img, threshold=19)
-    
+
     # Log the original and trimmed sizes
     src_size = f'{img.width}x{img.height}'
     trim_size = f'{trimmed_img.width}x{trimmed_img.height}+{offset_x}+{offset_y}'
@@ -53,7 +54,7 @@ def configFile(inFile: Path):
     trim_path = str(inFile).replace('.png', '_trim.png')
     trimmed_img.save(trim_path)
     print(f':: Trimmed PNG: {trim_path}')
-    
+
     # Create a WebP version if the image is large
     if trimmed_img.width > 512 or trimmed_img.height > 512:
         webp_path = str(inFile).replace('.png', '_webp_512.webp')
@@ -61,23 +62,25 @@ def configFile(inFile: Path):
         trimmed_img.save(webp_path, 'WEBP', lossless=True)
         print(f':: Converted WebP: {webp_path}')
 
+
 # folder
 def configFolder(inPath: Path):
     inFile = []
-    
+
     for file in os.listdir(inPath):
         file = os.path.join(inPath, file)
         fileExt = PurePath(file).suffix.lower()
         if extList.count(fileExt) > 0:
             inFile.append(file)
-    
+
     for i in range(len(inFile)):
         configFile(inFile[i])
+
 
 # set folder
 if len(sys.argv) < 2:
     inputPath = qtext(':: Folder/File: ', validate=PathValidator).ask()
-    inputPath = inputPath.strip('\"')
+    inputPath = inputPath.strip('"')
 else:
     inputPath = sys.argv[1]
 
@@ -105,4 +108,4 @@ except Exception as err:
 
 # end
 if os.environ.get('ISBATCH') is None:
-    qpause(message = '\n:: Press enter to continue...\n').ask()
+    qpause(message='\n:: Press enter to continue...\n').ask()

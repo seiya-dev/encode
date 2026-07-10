@@ -21,26 +21,28 @@ def extractFile(file: Path):
     result = getMKVData(file)
     # parse mkv results
     mkvfile = PurePath(result['file_name']).stem
-    outdir  = os.path.join(PurePath(result['file_name']).parent, 'fonts')
+    outdir = os.path.join(PurePath(result['file_name']).parent, 'fonts')
     attExtCmd = ['mkvextract', '--ui-language', 'en', 'attachments', file]
     # print filename
     print(f'\n:: FILE: {mkvfile}.mkv')
     # parse tracks
-    countTr = { 'video': 0, 'audio': 0, 'subtitles': 0 }
+    countTr = {'video': 0, 'audio': 0, 'subtitles': 0}
     if 'tracks' in result:
         for t in result['tracks']:
             p = t['properties']
             track_name = '/ ' + p['track_name'] if 'track_name' in p else ''
             language = p['language_ietf'] if 'language_ietf' in p else p['language']
-            printData = ' '.join([
-                f'#{t["id"]}',
-                t["type"].capitalize(),
-                f'#{countTr[t["type"]]}:',
-                p["codec_id"],
-                f'({t["codec"]})',
-                f'/ {language}',
-                track_name,
-            ])
+            printData = ' '.join(
+                [
+                    f'#{t["id"]}',
+                    t['type'].capitalize(),
+                    f'#{countTr[t["type"]]}:',
+                    p['codec_id'],
+                    f'({t["codec"]})',
+                    f'/ {language}',
+                    track_name,
+                ]
+            )
             print(printData)
             countTr[t['type']] = countTr[t['type']] + 1
     if 'attachments' in result:
@@ -54,9 +56,18 @@ def extractFile(file: Path):
         if not os.path.exists(outdir):
             os.mkdir(outdir)
         subprocess.run(attExtCmd)
-    
-    attExtCmd = ['mkvextract', file, 'chapters', '--ui-language', 'en', '-s', f'{file}.chapters.txt']
+
+    attExtCmd = [
+        'mkvextract',
+        file,
+        'chapters',
+        '--ui-language',
+        'en',
+        '-s',
+        f'{file}.chapters.txt',
+    ]
     subprocess.run(attExtCmd)
+
 
 def extractFolder(inputPath: Path):
     print(f'\n:: Selected path: {os.path.abspath(inputPath)}')
@@ -65,10 +76,11 @@ def extractFolder(inputPath: Path):
         if file.lower().endswith('.mkv'):
             extractFile(file)
 
+
 # set folder
 if len(sys.argv) < 2:
     inputPath = questionary.text(':: Folder/File: ', validate=PathValidator).ask()
-    inputPath = inputPath.strip('\"')
+    inputPath = inputPath.strip('"')
 else:
     inputPath = sys.argv[1]
 
@@ -88,4 +100,6 @@ except Exception as err:
 
 # end
 if os.environ.get('ISBATCH') is None:
-    questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()
+    questionary.press_any_key_to_continue(
+        message='\n:: Press enter to continue...\n'
+    ).ask()

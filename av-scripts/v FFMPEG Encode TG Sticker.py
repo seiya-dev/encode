@@ -25,30 +25,30 @@ from _encHelper import (
 
 extVideoFile.extend(['.gif'])
 
+
 def videoFilterGen(extendedFilter: bool = False):
-    baseFilter = "[0:v:0]scale=512:512:force_original_aspect_ratio=decrease"
-    
+    baseFilter = '[0:v:0]scale=512:512:force_original_aspect_ratio=decrease'
+
     if not extendedFilter:
         return baseFilter
-    
+
     rgbVal = "r='r(X,Y)':g='g(X,Y)':b='b(X,Y)'"
-    rv = "25"
-    
+    rv = '25'
+
     alphaMask = (
         f":a='255"
-        f"* max(lt(hypot(  X-{rv},   Y-{rv}), {rv}), 1-lt(X,   {rv})*lt(Y,   {rv}))"
-        f"* max(lt(hypot(W-X-{rv},   Y-{rv}), {rv}), 1-gt(X, W-{rv})*lt(Y,   {rv}))"
-        f"* max(lt(hypot(  X-{rv}, H-Y-{rv}), {rv}), 1-lt(X,   {rv})*gt(Y, H-{rv}))"
+        f'* max(lt(hypot(  X-{rv},   Y-{rv}), {rv}), 1-lt(X,   {rv})*lt(Y,   {rv}))'
+        f'* max(lt(hypot(W-X-{rv},   Y-{rv}), {rv}), 1-gt(X, W-{rv})*lt(Y,   {rv}))'
+        f'* max(lt(hypot(  X-{rv}, H-Y-{rv}), {rv}), 1-lt(X,   {rv})*gt(Y, H-{rv}))'
         f"* max(lt(hypot(W-X-{rv}, H-Y-{rv}), {rv}), 1-gt(X, W-{rv})*gt(Y, H-{rv}))'"
     )
-    
+
     extFilter = (
-        f"{baseFilter},format=rgba[v];"
-        f"[v]geq={rgbVal}{alphaMask}[v];"
-        f"[v]format=yuva420p"
+        f'{baseFilter},format=rgba[v];[v]geq={rgbVal}{alphaMask}[v];[v]format=yuva420p'
     )
-    
+
     return extFilter
+
 
 # file
 def configFile(inFile: Path):
@@ -58,101 +58,140 @@ def configFile(inFile: Path):
         print(f':: Skipping: {PurePath(inFile).name}')
         print(':: No video streams!')
         return
-    
+
     # customs
     encFPS = ''
     encTrm = ''
-    
-    useOvl = questionary.confirm('Use Overlay Filter (Default=No):', default=False).ask()
-    encCrf = questionary.text('Set Encode CRF:', validate=IntValidator, default='20').ask()
+
+    useOvl = questionary.confirm(
+        'Use Overlay Filter (Default=No):', default=False
+    ).ask()
+    encCrf = questionary.text(
+        'Set Encode CRF:', validate=IntValidator, default='20'
+    ).ask()
     # encFPS = questionary.text('Set Custom FPS:', default='').ask()
     # encTrm = questionary.text('Trim Video:', default='').ask()
     vTitle = questionary.text('Set Video Title:').ask()
-    
+
     startTime = time.monotonic()
     encodeTgSticker(inFile, useOvl, encCrf, encFPS, encTrm, vTitle)
-    
+
     runTime = time.monotonic() - startTime
     hours, rem = divmod(runTime, 3600)
     minutes, seconds = divmod(rem, 60)
-    print(f'\n:: Encoded {PurePath(inFile).name} in {hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}')
+    print(
+        f'\n:: Encoded {PurePath(inFile).name} in {hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}'
+    )
 
-def encodeTgSticker(inFile: Path, useOvl: bool, encCrf: int, encFPS: str, encTrm: str, vTitle: str, isRetry: bool = False):
+
+def encodeTgSticker(
+    inFile: Path,
+    useOvl: bool,
+    encCrf: int,
+    encFPS: str,
+    encTrm: str,
+    vTitle: str,
+    isRetry: bool = False,
+):
     outFolder = PurePath(inFile).parent
-    outFile   = f'{outFolder}/{PurePath(inFile).stem} [tg crf-{encCrf}].webm'
+    outFile = f'{outFolder}/{PurePath(inFile).stem} [tg crf-{encCrf}].webm'
     outFileFx = f'{outFolder}/{PurePath(inFile).stem} [tg crf-{encCrf}-fix].webm'
     outFilter = videoFilterGen(useOvl)
-    
+
     encCmd = []
-    encCmd.extend([ r'ffmpeg', '-hide_banner', ])
-    encCmd.extend([ '-loglevel', 'error', '-stats', ])
-    encCmd.extend([ '-hwaccel', 'auto', ])
-    encCmd.extend([ '-fflags', '+bitexact' ])
-    encCmd.extend([ '-flags:v', '+bitexact' ])
-    encCmd.extend([ '-flags:a', '+bitexact' ])
-    
-    encCmd.extend([ '-i', inFile ])
-    encCmd.extend([ '-an', '-sn', '-dn' ])
-    
-    encCmd.extend([ '-filter_complex', f'{outFilter}[video]' ])
-    encCmd.extend([ '-map', '[video]', '-c:v', 'libvpx-vp9', '-b:v', '0' ])
-    encCmd.extend([ '-crf', f'{encCrf}', '-deadline', 'best' ])
-    encCmd.extend([ '-map_metadata', '-1', '-map_chapters', '-1' ])
-    
-    encCmd.extend([ '-metadata', 'application=' ])
-    encCmd.extend([ '-metadata', 'writing_library=' ])
-    
+    encCmd.extend(
+        [
+            r'ffmpeg',
+            '-hide_banner',
+        ]
+    )
+    encCmd.extend(
+        [
+            '-loglevel',
+            'error',
+            '-stats',
+        ]
+    )
+    encCmd.extend(
+        [
+            '-hwaccel',
+            'auto',
+        ]
+    )
+    encCmd.extend(['-fflags', '+bitexact'])
+    encCmd.extend(['-flags:v', '+bitexact'])
+    encCmd.extend(['-flags:a', '+bitexact'])
+
+    encCmd.extend(['-i', inFile])
+    encCmd.extend(['-an', '-sn', '-dn'])
+
+    encCmd.extend(['-filter_complex', f'{outFilter}[video]'])
+    encCmd.extend(['-map', '[video]', '-c:v', 'libvpx-vp9', '-b:v', '0'])
+    encCmd.extend(['-crf', f'{encCrf}', '-deadline', 'best'])
+    encCmd.extend(['-map_metadata', '-1', '-map_chapters', '-1'])
+
+    encCmd.extend(['-metadata', 'application='])
+    encCmd.extend(['-metadata', 'writing_library='])
+
     if vTitle != '':
-        encCmd.extend([ '-metadata:s:v:0', f'title={vTitle}' ])
-    
+        encCmd.extend(['-metadata:s:v:0', f'title={vTitle}'])
+
     if FloatValidatorP(encFPS):
-        encCmd.extend([ '-r', encFPS ])
+        encCmd.extend(['-r', encFPS])
         print(f':: FPS Changed to {encFPS}')
-    
+
     if FloatValidatorP(encTrm):
-        encCmd.extend([ '-t', encTrm ])
+        encCmd.extend(['-t', encTrm])
         print(f':: Trimmed to {encTrm}')
-    
+
     print(f':: Trying Encode File With CRF {encCrf}')
-    encCmd.extend([ outFile ])
-    
+    encCmd.extend([outFile])
+
     if not os.path.isfile(outFile):
         subprocess.run(encCmd)
-    
+
     fsize = os.path.getsize(outFile)
-    if fsize > 256*1024 and int(encCrf) < 63:
+    if fsize > 256 * 1024 and int(encCrf) < 63:
         # os.remove(outFile)
-        outFile, outFileFx = encodeTgSticker(inFile, useOvl, int(encCrf)+1, encFPS, encTrm, vTitle, True)
-    
+        outFile, outFileFx = encodeTgSticker(
+            inFile, useOvl, int(encCrf) + 1, encFPS, encTrm, vTitle, True
+        )
+
     if isRetry:
         return outFile, outFileFx
-    
+
     if not os.path.isfile(outFileFx):
         stickData = getMediaData(outFile)
-        if 'format' in stickData and 'duration' in stickData['format'] and float(stickData['format']['duration']) > 3:
+        if (
+            'format' in stickData
+            and 'duration' in stickData['format']
+            and float(stickData['format']['duration']) > 3
+        ):
             shutil.copy(outFile, outFileFx)
-            
-            with open(outFileFx, "r+b") as file:
+
+            with open(outFileFx, 'r+b') as file:
                 content = file.read()
-                offset = content.find(b"\x44\x89")
-                
+                offset = content.find(b'\x44\x89')
+
                 if offset > -1:
                     file.seek(offset + 2)
                     elSize = file.read(1)
-                    
-                    if elSize == b"\x88":
+
+                    if elSize == b'\x88':
                         # 8 bytes double float
-                        file.write(struct.pack(">d", 3000))
+                        file.write(struct.pack('>d', 3000))
+
 
 # folder
 def configFolder(inPath: Path):
     print(f'\n:: Selected path: {os.path.abspath(inPath)}')
     print('script not usable for dir!')
 
+
 # set folder
 if len(sys.argv) < 2:
     inputPath = questionary.text(':: Folder/File: ', validate=PathValidator).ask()
-    inputPath = inputPath.strip('\"')
+    inputPath = inputPath.strip('"')
 else:
     inputPath = sys.argv[1]
 
@@ -176,14 +215,17 @@ try:
 except Exception as err:
     print('\n:: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
-    
+
     import traceback
+
     tb_exc = traceback.format_tb(err.__traceback__)
-    
+
     for tb_line in tb_exc:
         if not tb_line.startswith('  File "<frozen os>"'):
             print(f':: {tb_line.strip()}')
 
 # end
 if os.environ.get('ISBATCH') is None:
-    questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()
+    questionary.press_any_key_to_continue(
+        message='\n:: Press enter to continue...\n'
+    ).ask()

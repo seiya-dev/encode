@@ -19,39 +19,59 @@ from _encHelper import PathValidator, extAudioFile, extVideoFile
 # file
 def configFile(inFile: Path):
     print(f'\n:: Checking: {PurePath(inFile).name}')
-    
+
     encCmd = []
-    encCmd.extend([ r'ffmpeg', '-hide_banner', ])
-    encCmd.extend([ '-loglevel', 'error', '-stats', ])
-    encCmd.extend([ '-hwaccel', 'auto', ])
-    encCmd.extend([ '-i', inFile ])
-    encCmd.extend([ '-f', 'null', '-' ])
-    
+    encCmd.extend(
+        [
+            r'ffmpeg',
+            '-hide_banner',
+        ]
+    )
+    encCmd.extend(
+        [
+            '-loglevel',
+            'error',
+            '-stats',
+        ]
+    )
+    encCmd.extend(
+        [
+            '-hwaccel',
+            'auto',
+        ]
+    )
+    encCmd.extend(['-i', inFile])
+    encCmd.extend(['-f', 'null', '-'])
+
     startTime = time.monotonic()
     subprocess.run(encCmd)
-    
+
     runTime = time.monotonic() - startTime
     hours, rem = divmod(runTime, 3600)
     minutes, seconds = divmod(rem, 60)
-    print(f'\n:: Checked {PurePath(inFile).name} in {hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}')
+    print(
+        f'\n:: Checked {PurePath(inFile).name} in {hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}'
+    )
+
 
 # folder
 def configFolder(inPath: Path):
     inFile = []
-    
+
     for file in os.listdir(inPath):
         file = os.path.join(inPath, file)
         fileExt = PurePath(file).suffix.lower()
         if extVideoFile.count(fileExt) > 0 or extAudioFile.count(fileExt) > 0:
             inFile.append(file)
-    
+
     for i in range(len(inFile)):
         configFile(inFile[i])
+
 
 # set folder
 if len(sys.argv) < 2:
     inputPath = questionary.text(':: Folder/File: ', validate=PathValidator).ask()
-    inputPath = inputPath.strip('\"')
+    inputPath = inputPath.strip('"')
 else:
     inputPath = sys.argv[1]
 
@@ -78,4 +98,6 @@ except Exception as err:
 
 # end
 if os.environ.get('ISBATCH') is None:
-    questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()
+    questionary.press_any_key_to_continue(
+        message='\n:: Press enter to continue...\n'
+    ).ask()

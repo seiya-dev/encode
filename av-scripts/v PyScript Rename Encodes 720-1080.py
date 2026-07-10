@@ -16,10 +16,10 @@ from _encHelper import PathValidator
 
 
 def renameFile(inFile: Path, targetTitle: str):
-    
+
     outFolder = PurePath(inFile).parent
-    outName   = PurePath(inFile).stem
-    
+    outName = PurePath(inFile).stem
+
     if m := re.search(reSETartget, outName):
         episode, ext = m.group('episode'), m.group('ext')
         if targetTitle == '':
@@ -33,27 +33,29 @@ def renameFile(inFile: Path, targetTitle: str):
             targetTitle = title
     else:
         return
-    
+
     formFile = f'{outFolder}/{outName}.mp4'
     ext = ext if ext == 'orig' else f'{ext}p'
     toFile = f'{outFolder}/{targetTitle} - {episode} [{ext}].mp4'
     os.rename(formFile, toFile)
 
+
 def checkFolder(inputPath: Path):
     print(f':: Selected path: {inputPath}\n')
-    
+
     targetTitle = input(':: Target title: ')
-    
+
     if os.path.isdir(inputPath):
         for file in os.listdir(inputPath):
             file = os.path.join(inputPath, file)
             if file.lower().endswith('.mp4'):
                 renameFile(file, targetTitle)
 
+
 # set folder
 if len(sys.argv) < 2:
     inputPath = questionary.text(':: Folder: ', validate=PathValidator).ask()
-    inputPath = inputPath.strip('\"')
+    inputPath = inputPath.strip('"')
 else:
     inputPath = sys.argv[1]
 
@@ -69,4 +71,6 @@ else:
 
 # end
 if os.environ.get('ISBATCH') is None:
-    questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()
+    questionary.press_any_key_to_continue(
+        message='\n:: Press enter to continue...\n'
+    ).ask()

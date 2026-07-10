@@ -32,115 +32,149 @@ except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))
     exit()
 
+
 # file
 def configFile(inFile: Path):
     outFolder = PurePath(inFile).parent
-    outFile   = f'{outFolder}/{PurePath(inFile).stem} [enc].mp4'
+    outFile = f'{outFolder}/{PurePath(inFile).stem} [enc].mp4'
     inFonts = fixPath(f'{outFolder}/fonts', True)
-    
+
     videoData = getMediaData(inFile, 'v', True)
     if len(videoData) < 1:
         print()
         print(f':: Skipping: {PurePath(inFile).name}')
         print(':: No video streams!')
         return
-    
+
     videoInfo = getMediaData(inFile)
-    videoDur  = round(float(videoInfo['format']['duration']))
+    videoDur = round(float(videoInfo['format']['duration']))
     videoDur_h, videoDur_r = divmod(videoDur, 3600)
     videoDur_m, videoDur_s = divmod(videoDur_r, 60)
     print(f':: Duration : {videoDur_h:02.0f}:{videoDur_m:02.0f}:{videoDur_s:02.0f}')
-    
+
     vFilters = '[0:v:0]format=yuv420p'
     encCrf = qtext('Set Encode CRF:', validate=IntValidator, default='20').ask()
-    
+
     audioList = []
     audioData = getMediaData(inFile, 'a')
     for t in range(len(audioData)):
         tname = audioTitle(audioData, t)
         audioList.append(Choice(f'[{str(t).rjust(2)}]: {tname}', value=t))
     audioList.append(Choice('[-1]: No Audio', value='-1'))
-    
+
     audioCmd = []
     audioTrack = qselect('Select Audio Track:', audioList).ask()
     if audioTrack != '-1':
-        encodeAudio = qconfirm('Encode Audio to AAC 192k 2ch (Default=No):', default=False).ask()
+        encodeAudio = qconfirm(
+            'Encode Audio to AAC 192k 2ch (Default=No):', default=False
+        ).ask()
         atid = int(audioTrack)
         if encodeAudio:
-            audioCmd = [ '-map', f'0:a:{atid}?', '-c:a', 'aac', '-cutoff', '0', '-b:a', '192k', '-ac', '2' ]
+            audioCmd = [
+                '-map',
+                f'0:a:{atid}?',
+                '-c:a',
+                'aac',
+                '-cutoff',
+                '0',
+                '-b:a',
+                '192k',
+                '-ac',
+                '2',
+            ]
         else:
-            audioCmd = [ '-map', f'0:a:{atid}?', '-c:a', 'copy' ]
-    
+            audioCmd = ['-map', f'0:a:{atid}?', '-c:a', 'copy']
+
     vTitle = qtext('Set Video Title:').ask()
-    
+
     subsData = searchSubsFile(inFile)
     subsTrack = qselect('Subtitle For HardSubs:', subsData.sel).ask()
     if subsTrack != '-1':
         inSubs = subsData.inf[subsTrack]
         inSubsFile = fixPath(inSubs['file'], True)
         tid = int(subsTrack.split(':')[1])
-        
-        outsubs = f'filename=\'{inSubsFile}\''
+
+        outsubs = f"filename='{inSubsFile}'"
         overlay = False
-        
+
         if inSubs['ext']:
-            outsubs = f'subtitles={outsubs}:fontsdir=\'{inFonts}\''
+            outsubs = f"subtitles={outsubs}:fontsdir='{inFonts}'"
         else:
             subsCodec = inSubs['codec']
             if subsCodec == 'dvd_subtitle' or subsCodec == 'hdmv_pgs_subtitle':
                 overlay = True
                 outsubs = f'[v];[v][0:s:{tid}]overlay'
             else:
-                outsubs = f'subtitles={outsubs}:stream_index={tid}:fontsdir=\'{inFonts}\''
+                outsubs = f"subtitles={outsubs}:stream_index={tid}:fontsdir='{inFonts}'"
         comaadd = ',' if not overlay else ''
         vFilters = f'{vFilters}{comaadd}{outsubs}'
-    
+
     encCmd = []
-    encCmd.extend([ r'ffmpeg', '-hide_banner', ])
-    encCmd.extend([ '-loglevel', 'error', '-stats', ])
-    encCmd.extend([ '-hwaccel', 'auto', ])
-    encCmd.extend([ '-fflags', '+bitexact' ])
-    encCmd.extend([ '-flags:v', '+bitexact' ])
-    encCmd.extend([ '-flags:a', '+bitexact' ])
-    
-    encCmd.extend([ '-i', inFile ])
+    encCmd.extend(
+        [
+            r'ffmpeg',
+            '-hide_banner',
+        ]
+    )
+    encCmd.extend(
+        [
+            '-loglevel',
+            'error',
+            '-stats',
+        ]
+    )
+    encCmd.extend(
+        [
+            '-hwaccel',
+            'auto',
+        ]
+    )
+    encCmd.extend(['-fflags', '+bitexact'])
+    encCmd.extend(['-flags:v', '+bitexact'])
+    encCmd.extend(['-flags:a', '+bitexact'])
+
+    encCmd.extend(['-i', inFile])
     if audioTrack == '-1':
-        encCmd.extend([ '-an' ])
-    encCmd.extend([ '-sn', '-dn' ])
-    
-    encCmd.extend([ '-filter_complex', f'{vFilters}[video]' ])
-    
-    encCmd.extend([ '-map', '[video]', '-c:v', 'libx264', '-crf', encCrf ])
-    encCmd.extend([ '-preset:v', 'faster', '-tune:v', 'animation' ])
+        encCmd.extend(['-an'])
+    encCmd.extend(['-sn', '-dn'])
+
+    encCmd.extend(['-filter_complex', f'{vFilters}[video]'])
+
+    encCmd.extend(['-map', '[video]', '-c:v', 'libx264', '-crf', encCrf])
+    encCmd.extend(['-preset:v', 'faster', '-tune:v', 'animation'])
     if len(audioCmd) > 0:
         encCmd.extend(audioCmd)
-    
-    encCmd.extend([ '-map_metadata', '-1', '-map_chapters', '-1' ])
-    encCmd.extend([ '-metadata', 'application=' ])
-    encCmd.extend([ '-metadata', 'writing_library=' ])
+
+    encCmd.extend(['-map_metadata', '-1', '-map_chapters', '-1'])
+    encCmd.extend(['-metadata', 'application='])
+    encCmd.extend(['-metadata', 'writing_library='])
     if vTitle != '':
-        encCmd.extend([ '-metadata:s:v:0', f'title={vTitle}' ])
-    
+        encCmd.extend(['-metadata:s:v:0', f'title={vTitle}'])
+
     # encCmd.extend([ '-brand', 'mp42' ])
-    encCmd.extend([ outFile ])
-    
+    encCmd.extend([outFile])
+
     startTime = time.monotonic()
     subprocess.run(encCmd)
-    
+
     runTime = time.monotonic() - startTime
     hours, rem = divmod(runTime, 3600)
     minutes, seconds = divmod(rem, 60)
-    print(f'\n:: Encoded {PurePath(outFile).name} in {hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}')
+    print(
+        f'\n:: Encoded {PurePath(outFile).name} in {hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}'
+    )
+
 
 # folder
 def configFolder(inPath: Path):
     print(f'\n:: Selected path: {os.path.abspath(inPath)}')
     print('script not usable for dir!')
 
+
 # set folder
 if len(sys.argv) < 2:
     inputPath = qtext(':: Folder/File: ', validate=PathValidator).ask()
-    inputPath = inputPath.strip('\"')
+    inputPath = inputPath.strip('"')
 else:
     inputPath = sys.argv[1]
 
@@ -167,4 +201,4 @@ except Exception as err:
 
 # end
 if os.environ.get('ISBATCH') is None:
-    qpause(message = '\n:: Press enter to continue...\n').ask()
+    qpause(message='\n:: Press enter to continue...\n').ask()
