@@ -290,6 +290,7 @@ def getMediaData(inputPath: Path, streamType: str = '', showLog: bool = False) -
         result = json.loads(result)
     except Exception:
         print(':: FAILED TO GET MEDIA DATA')
+        result = {'streams': []}
     
     result = result if 'streams' in result else {'streams':[]}
     result = result if streamType == '' else result['streams']
