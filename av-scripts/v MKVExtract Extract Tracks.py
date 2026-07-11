@@ -2,39 +2,33 @@
 
 # set libs
 import os
-import re
-import sys
-import json
-import time
 import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+import sys
+from pathlib import Path, PurePath
 
 try:
     import questionary
-    from questionary import Choice, Validator, ValidationError
 except ModuleNotFoundError:
     print(':: Please install "questionary" module: pip install questionary')
     input(':: Press enter to continue...\n')
     exit()
 
-from _encHelper import boolYN, IntValidator, PathValidator, extVideoFile, fixPath
-from _encHelper import getMediaData, getMKVData, audioTitle, searchSubsFile
+from _encHelper import PathValidator, getMKVData
+
 
 def extractFile(file: Path):
     # get mkv data
     result = getMKVData(file)
     # parse mkv results
     mkvfile = PurePath(result['file_name']).stem
-    outdir  = PurePath(result['file_name']).parent
+    outdir = PurePath(result['file_name']).parent
     # print filename
     print(f'\n:: FILE: {mkvfile}.mkv')
     # set ids
-    countTr = { 'video': 0, 'audio': 0, 'subtitles': 0 }
-    namesTr = list()
-    trackTp = dict()
-    trackNm = dict()
+    countTr = {'video': 0, 'audio': 0, 'subtitles': 0}
+    namesTr = []
+    trackTp = {}
+    trackNm = {}
     # list tracks
     if 'tracks' in result:
         for t in result['tracks']:
@@ -42,14 +36,16 @@ def extractFile(file: Path):
             track_tid = f'{t["type"][:1]}:{countTr[t["type"]]}'
             track_name = '/ ' + p['track_name'] if 'track_name' in p else ''
             language = p['language_ietf'] if 'language_ietf' in p else p['language']
-            printData = ' '.join([
-                f'#{t["id"]}',
-                track_tid,
-                f'{t["type"].capitalize()}:',
-                t["codec"],
-                f'/ {language}',
-                track_name,
-            ])
+            printData = ' '.join(
+                [
+                    f'#{t["id"]}',
+                    track_tid,
+                    f'{t["type"].capitalize()}:',
+                    t['codec'],
+                    f'/ {language}',
+                    track_name,
+                ]
+            )
             namesTr.append(printData)
             trackTp[track_tid] = t['id']
             if 'track_name' in p:
@@ -62,7 +58,7 @@ def extractFile(file: Path):
     # select track
     global isFile
     global trackIndex
-    if trackIndex is None or isFile == True:
+    if trackIndex is None or isFile:
         trackIndex = input('\n:: Track Index or Track Name to Extract: ')
     # check
     trackIndexNum = -1
@@ -71,11 +67,8 @@ def extractFile(file: Path):
     if trackIndex in trackNm:
         trackIndexNum = trackNm[trackIndex]
     try:
-        if trackIndexNum > -1:
-            trackIndexNum = int(trackIndexNum)
-        else:
-            trackIndexNum = int(trackIndex)
-        if -1 > trackIndexNum > len(result['tracks']):
+        trackIndexNum = int(trackIndexNum) if trackIndexNum > -1 else int(trackIndex)
+        if trackIndexNum < 0 or trackIndexNum >= len(result['tracks']):
             trackIndexNum = -1
     except ValueError:
         trackIndexNum = -1
@@ -109,11 +102,21 @@ def extractFile(file: Path):
         if trackCodec == 'S_TEXT/UTF8':
             trackExt = 'srt'
         # do extract
-        output = os.path.join(outdir, f'{PurePath(file).stem}_track{trackIndexNum+1}.{trackExt}')
-        mkvExtractCmd = ['mkvextract', '--ui-language', 'en', 'tracks', file, f'{trackIndexNum}:{output}']
+        output = os.path.join(
+            outdir, f'{PurePath(file).stem}_track{trackIndexNum + 1}.{trackExt}'
+        )
+        mkvExtractCmd = [
+            'mkvextract',
+            '--ui-language',
+            'en',
+            'tracks',
+            file,
+            f'{trackIndexNum}:{output}',
+        ]
         subprocess.run(mkvExtractCmd)
-    if isFile == True:
+    if isFile:
         extractFile(file)
+
 
 def extractFolder(inputPath: Path):
     print(f'\n:: Selected path: {os.path.abspath(inputPath)}')
@@ -122,6 +125,7 @@ def extractFolder(inputPath: Path):
         if file.lower().endswith('.mkv'):
             extractFile(file)
 
+
 # set default
 isFile = False
 trackIndex = None
@@ -129,7 +133,7 @@ trackIndex = None
 # set folder
 if len(sys.argv) < 2:
     inputPath = questionary.text(':: Folder/File: ', validate=PathValidator).ask()
-    inputPath = inputPath.strip('\"')
+    inputPath = inputPath.strip('"')
 else:
     inputPath = sys.argv[1]
 
@@ -144,9 +148,11 @@ try:
     else:
         extractFolder(inputPath)
 except Exception as err:
-    print(f':: Something goes wrong...')
+    print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
 
 # end
-if os.environ.get('isBatch') is None:
-    questionary.press_any_key_to_continue(message = '\n:: Press enter to continue...\n').ask()
+if os.environ.get('ISBATCH') is None:
+    questionary.press_any_key_to_continue(
+        message='\n:: Press enter to continue...\n'
+    ).ask()

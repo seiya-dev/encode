@@ -1,25 +1,22 @@
+import argparse
 import io
+import json
 import os
 import re
-import sys
-import json
-import zlib
 import struct
-import argparse
 import subprocess
-
-from typing import List
-from pathlib import Path
-from pathlib import PurePath
-
+import sys
+import zlib
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
+from pathlib import Path, PurePath
+from typing import Any
+
 
 def moduleNotFound(text: str) -> str:
     fmodule = re.search(r'\'(.*)\'', text)
     returnText = ':: Please install required module'
     if fmodule:
-        fmodule = fmodule.group().strip('\'')
+        fmodule = fmodule.group().strip("'")
         if fmodule == 'numpy':
             returnText = f'{returnText}: pip install numpy'
         if fmodule == 'tqdm':
@@ -35,6 +32,7 @@ def moduleNotFound(text: str) -> str:
     print(returnText)
     input(':: Press enter to continue...\n')
 
+
 def set_console_title(title: str):
     if os.name == 'nt':
         os.system(f'title {title}')
@@ -42,13 +40,15 @@ def set_console_title(title: str):
         sys.stdout.write(f'\33]0;{title}\a')
         sys.stdout.flush()
 
+
 try:
-    from questionary import Choice, Validator, ValidationError
-    from PIL import Image
     import numpy as np
+    from PIL import Image
+    from questionary import Choice
 except ModuleNotFoundError as errorModule:
     moduleNotFound(str(errorModule))
     exit()
+
 
 # int validator
 def IntValidator(text: str) -> bool:
@@ -60,6 +60,7 @@ def IntValidator(text: str) -> bool:
         return False
     return True
 
+
 # float validator
 def FloatValidatorP(text: str) -> bool:
     try:
@@ -68,20 +69,20 @@ def FloatValidatorP(text: str) -> bool:
         return False
     return boolF
 
+
 # check path
 def PathValidator(text: str) -> bool:
-    text = text.strip('\"')
+    text = text.strip('"')
     if len(text) == 0:
         return False
     return os.path.exists(text)
 
+
 # check y/n
 def boolYN(text: str) -> bool:
     text = str(text).lower().strip()
-    if len(text) > 0 and text[0] == 'y':
-        return True
-    else:
-        return False
+    return bool(len(text) > 0 and text[0] == 'y')
+
 
 # fix paths
 def fixPath(inFile: Path, forFFmpeg: bool = False):
@@ -94,78 +95,82 @@ def fixPath(inFile: Path, forFFmpeg: bool = False):
             inFile = inFile.replace("'", r"'\''")
     return inFile
 
+
 # acceptable extensions
 extVideoFile = ['.mkv', '.mp4', '.mov', '.avi', '.avs', '.webm']
 extAudioFile = ['.mka', '.m4a', '.aac', '.flac', '.eac3', '.mp3', '.wav']
-extSubsFile  = ['.ass', '.srt']
+extSubsFile = ['.ass', '.srt']
+
 
 @dataclass
 class ResolutionStandard:
     label: str
     width: int
     height: int
-    
+
     @property
     def numeric(self) -> int:
         return int(''.join(filter(str.isdigit, self.label)))
-    
+
     @property
     def aspect_ratio(self) -> float:
         return self.width / self.height
 
+
 # Common resolutions
 STD_RESOLUTIONS = [
     # --- 16:9 ---
-    ResolutionStandard("144p", 256, 144),
-    ResolutionStandard("240p", 426, 240),
-    ResolutionStandard("360p", 640, 360),
-    ResolutionStandard("480p", 854, 480),
-    ResolutionStandard("720p", 1280, 720),
-    ResolutionStandard("1080p", 1920, 1080),
-    ResolutionStandard("1440p", 2560, 1440),
-    ResolutionStandard("2160p", 3840, 2160),
-    ResolutionStandard("4320p", 7680, 4320),
+    ResolutionStandard('144p', 256, 144),
+    ResolutionStandard('240p', 426, 240),
+    ResolutionStandard('360p', 640, 360),
+    ResolutionStandard('480p', 854, 480),
+    ResolutionStandard('720p', 1280, 720),
+    ResolutionStandard('1080p', 1920, 1080),
+    ResolutionStandard('1440p', 2560, 1440),
+    ResolutionStandard('2160p', 3840, 2160),
+    ResolutionStandard('4320p', 7680, 4320),
     # --- FULL 4:3 RANGE (up to 1920x1440) ---
-    ResolutionStandard("240p (4:3)", 320, 240),
-    ResolutionStandard("360p (4:3)", 480, 360),
-    ResolutionStandard("480p (4:3)", 640, 480),
-    ResolutionStandard("600p (4:3)", 800, 600),
-    ResolutionStandard("768p (4:3)", 1024, 768),
-    ResolutionStandard("960p (4:3)", 1280, 960),
-    ResolutionStandard("1080p (4:3)", 1440, 1080),
-    ResolutionStandard("1440p (4:3)", 1920, 1440),
+    ResolutionStandard('240p (4:3)', 320, 240),
+    ResolutionStandard('360p (4:3)', 480, 360),
+    ResolutionStandard('480p (4:3)', 640, 480),
+    ResolutionStandard('600p (4:3)', 800, 600),
+    ResolutionStandard('768p (4:3)', 1024, 768),
+    ResolutionStandard('960p (4:3)', 1280, 960),
+    ResolutionStandard('1080p (4:3)', 1440, 1080),
+    ResolutionStandard('1440p (4:3)', 1920, 1440),
     # --- 2.35:1 CINEMASCOPE / ANAMORPHIC ---
-    ResolutionStandard("2.35:1 800w", 800, 340),
-    ResolutionStandard("2.35:1 1280w", 1280, 544),
-    ResolutionStandard("2.35:1 1920w", 1920, 816),
-    ResolutionStandard("2.35:1 2560w", 2560, 1088),
-    ResolutionStandard("2.35:1 3840w", 3840, 1634),
-    ResolutionStandard("2.35:1 4096w", 4096, 1740),
+    ResolutionStandard('2.35:1 800w', 800, 340),
+    ResolutionStandard('2.35:1 1280w', 1280, 544),
+    ResolutionStandard('2.35:1 1920w', 1920, 816),
+    ResolutionStandard('2.35:1 2560w', 2560, 1088),
+    ResolutionStandard('2.35:1 3840w', 3840, 1634),
+    ResolutionStandard('2.35:1 4096w', 4096, 1740),
 ]
 
-def classify_video_resolution(width: int, height: int) -> Dict[str, Any]:
+
+def classify_video_resolution(width: int, height: int) -> dict[str, Any]:
     if width <= 0 or height <= 0:
-        raise ValueError("Width and height must be positive integers.")
-    
+        raise ValueError('Width and height must be positive integers.')
+
     # Orientation from original values
     if width > height:
-        orientation = "landscape"
+        orientation = 'landscape'
     elif height > width:
-        orientation = "portrait"
+        orientation = 'portrait'
     else:
-        orientation = "square"
-    
+        orientation = 'square'
+
     # Normalize so that width >= height
     norm_width, norm_height = (max(width, height), min(width, height))
     aspect = norm_width / norm_height
-    
+
     # Tolerances
-    MAX_HEIGHT_REL_DIFF = 0.25   # 25% height difference allowed
-    MAX_AR_REL_DIFF = 0.12       # 12% aspect ratio difference allowed
-    
-    best_match: Optional[ResolutionStandard] = None
-    best_score = float("inf")
-    
+    MAX_HEIGHT_REL_DIFF = 0.25  # 25% height difference allowed
+    MAX_AR_REL_DIFF = 0.12  # 12% aspect ratio difference allowed
+
+    best_match: ResolutionStandard | None = None
+    best_score = float('inf')
+
     for std in STD_RESOLUTIONS:
         std_ar = std.aspect_ratio
         height_rel_diff = abs(norm_height - std.height) / std.height
@@ -179,21 +184,21 @@ def classify_video_resolution(width: int, height: int) -> Dict[str, Any]:
         if score < best_score:
             best_score = score
             best_match = std
-    
+
     if best_match is None:
         return {
-            "label": "Unknown",
-            "numeric_label": None,
-            "orientation": orientation,
-            "original_size": (width, height),
-            "normalized_size": (norm_width, norm_height),
-            "aspect_ratio": round(aspect, 4),
+            'label': 'Unknown',
+            'numeric_label': None,
+            'orientation': orientation,
+            'original_size': (width, height),
+            'normalized_size': (norm_width, norm_height),
+            'aspect_ratio': round(aspect, 4),
         }
-    
+
     # Determine final p-label
     std_ar = best_match.aspect_ratio
     is_scope = 2.30 < std_ar < 2.40  # 2.35-ish
-    
+
     if is_scope:
         # Map 2.35:1 to standard container-based p
         scope_width_map = {
@@ -207,27 +212,28 @@ def classify_video_resolution(width: int, height: int) -> Dict[str, Any]:
     else:
         # Normal: use matched height as p-label
         label_height = best_match.height
-    
-    label = f"{label_height}p"
+
+    label = f'{label_height}p'
     numeric = label_height
-    
+
     return {
-        "label": label,
-        "numeric_label": numeric,
-        "orientation": orientation,
-        "original_size": (width, height),
-        "normalized_size": (norm_width, norm_height),
-        "aspect_ratio": round(aspect, 4),
+        'label': label,
+        'numeric_label': numeric,
+        'orientation': orientation,
+        'original_size': (width, height),
+        'normalized_size': (norm_width, norm_height),
+        'aspect_ratio': round(aspect, 4),
     }
+
 
 # search files
 def searchMedia(inputPath: Path, prefixName: str, extFilter: list) -> list:
     inputPath = str(inputPath)
-    
-    fsList = list()
+
+    fsList = []
     baseLevel = len(inputPath.split(os.path.sep))
-    
-    for root, dirs, files in os.walk(inputPath):
+
+    for root, _dirs, files in os.walk(inputPath):
         curLevel = len(root.split(os.path.sep))
         if curLevel < baseLevel + 3:
             for file in files:
@@ -238,43 +244,67 @@ def searchMedia(inputPath: Path, prefixName: str, extFilter: list) -> list:
                     inFile.name = inFile.path.replace(f'{inputPath}{os.path.sep}', '')
                     inFile.ext = fileExt[1:]
                     fsList.append(inFile)
-    
+
     return fsList
+
 
 # get mkv info
 def getMKVData(inputPath: Path) -> dict:
-    mkvcmd = [ 'mkvmerge', '-J', inputPath ]
+    mkvcmd = ['mkvmerge', '-J', inputPath]
     result = subprocess.run(mkvcmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     result = json.loads(result.stdout.decode('utf-8'))
     return result
 
+
 # get media info
 def getMediaInfo(inputPath: Path) -> dict:
-    micmd = [ 'MediaInfo', '--Output=JSON', inputPath ]
+    micmd = ['MediaInfo', '--Output=JSON', inputPath]
     result = subprocess.run(micmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     result = json.loads(result.stdout.decode('utf-8'))
     return result
 
+
 # get data from video file
 def getMediaData(inputPath: Path, streamType: str = '', showLog: bool = False) -> dict:
-    ffProbeCmd = list()
-    ffProbeCmd.extend([ r'ffprobe', '-v', 'error', '-hide_banner', ])
-    ffProbeCmd.extend([ '-print_format', 'json', '-show_format', '-show_streams', ])
+    ffProbeCmd = []
+    ffProbeCmd.extend(
+        [
+            r'ffprobe',
+            '-v',
+            'error',
+            '-hide_banner',
+        ]
+    )
+    ffProbeCmd.extend(
+        [
+            '-print_format',
+            'json',
+            '-show_format',
+            '-show_streams',
+        ]
+    )
     if streamType != '':
-        ffProbeCmd.extend([ '-select_streams', streamType, ])
-    ffProbeCmd.extend([ inputPath ])
-    
-    result = subprocess.run(ffProbeCmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        ffProbeCmd.extend(
+            [
+                '-select_streams',
+                streamType,
+            ]
+        )
+    ffProbeCmd.extend([inputPath])
+
+    result = subprocess.run(
+        ffProbeCmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
     result = result.stdout
-    
+
     try:
         result = result.decode('utf-8')
-    except:
+    except Exception:
         result = result.decode('ISO-8859-1')
-    
+
     lwiCreate = re.search(r'^Creating lwi index file .*', result, flags=re.M)
     if lwiCreate:
-        print(f'[:info:] LWI Index file created!')
+        print('[:info:] LWI Index file created!')
     if showLog:
         libassLog = re.findall(r'^libass: .*', result, flags=re.M)
         if libassLog:
@@ -291,56 +321,62 @@ def getMediaData(inputPath: Path, streamType: str = '', showLog: bool = False) -
     result = re.sub(r'^\[avisynth .*', '', result, flags=re.M)
     result = re.sub(r'^\w.*', '', result, flags=re.M)
     result = re.sub(r'^\(.*', '', result, flags=re.M)
-    
+
     try:
         result = json.loads(result)
-    except:
+    except Exception:
         print(':: FAILED TO GET MEDIA DATA')
-    
-    result = result if 'streams' in result else {'streams':list()}
+        result = {'streams': []}
+
+    result = result if 'streams' in result else {'streams': []}
     result = result if streamType == '' else result['streams']
     return result
 
+
 def audioTitle(audioData: dict, trackId: int, returnCodec: bool = False) -> str:
     a = audioData[trackId]
-    
-    if not 'codec_name' in a and 'codec_tag_string' in a:
+
+    if 'codec_name' not in a and 'codec_tag_string' in a:
         a['codec_name'] = a['codec_tag_string']
-    
-    t        = a['tags']       if 'tags'       in a else dict()
-    codec    = a['codec_name'] if 'codec_name' in a else 'UNK_CODEC'
-    channels = a['channels']   if 'channels'   in a else '?'
-    lang     = t['language']   if 'language'   in t else 'UNK'
-    title    = t['title']      if 'title'      in t else 'NO_TITLE'
-    
+
+    t = a.get('tags', {})
+    codec = a.get('codec_name', 'UNK_CODEC')
+    channels = a.get('channels', '?')
+    lang = t.get('language', 'UNK')
+    title = t.get('title', 'NO_TITLE')
+
     tname = f'{codec} {channels}ch {lang} {title}'.strip()
-    
+
     if returnCodec:
         return tname, codec
     else:
         return tname
 
+
 def subsTitle(subsData: dict, trackId: int, returnCodec: bool = False) -> str:
     s = subsData[trackId]
-    
-    if not 'codec_name' in s and 'codec_tag_string' in s:
+
+    if 'codec_name' not in s and 'codec_tag_string' in s:
         s['codec_name'] = s['codec_tag_string']
-    
-    t      = s['tags']       if 'tags'       in s else dict()
-    codec  = s['codec_name'] if 'codec_name' in s else 'UNK_CODEC'
-    lang   = t['language']   if 'language'   in t else 'UNK'
-    title  = t['title']      if 'title'      in t else 'NO_TITLE'
-    
+
+    t = s.get('tags', {})
+    codec = s.get('codec_name', 'UNK_CODEC')
+    lang = t.get('language', 'UNK')
+    title = t.get('title', 'NO_TITLE')
+
     tname = f'{lang} {title} #{codec}'.strip()
-    
-    if 'NUMBER_OF_BYTES' in t and (codec == 'dvd_subtitle' or codec == 'hdmv_pgs_subtitle'):
+
+    if 'NUMBER_OF_BYTES' in t and (
+        codec == 'dvd_subtitle' or codec == 'hdmv_pgs_subtitle'
+    ):
         bInt = t['NUMBER_OF_BYTES']
         tname += f' ({bInt} bytes)'
-    
+
     if returnCodec:
         return tname, codec
     else:
         return tname
+
 
 # find subs files
 def searchSubsFile(inputPath: Path, searchExtSubsFile: list = extSubsFile):
@@ -348,49 +384,63 @@ def searchSubsFile(inputPath: Path, searchExtSubsFile: list = extSubsFile):
     subsData.root = str(PurePath(inputPath).parent)
     subsData.prefix = str(PurePath(inputPath).stem)
     inFileExt = str(PurePath(inputPath).suffix.lower())
-    
+
     fileIdx = -1
-    subsData.sel = list()
-    subsData.inf = dict()
-    
+    subsData.sel = []
+    subsData.inf = {}
+
     if inFileExt == '.mkv':
         subsDataMKV = getMediaData(inputPath, 's')
         if len(subsDataMKV) > 0:
             fileIdx += 1
             for t in range(len(subsDataMKV)):
-                
-                track_id   = f'{fileIdx}:{t}'
+                track_id = f'{fileIdx}:{t}'
                 track_name, codec = subsTitle(subsDataMKV, t, True)
-                
-                subsData.inf[track_id] = { "file": inputPath, "codec": codec, "title": track_name, "ext": False }
-                subsData.sel.append(Choice(f'[{track_id}]: [MKV] {track_name}', value=track_id))
-    
+
+                subsData.inf[track_id] = {
+                    'file': inputPath,
+                    'codec': codec,
+                    'title': track_name,
+                    'ext': False,
+                }
+                subsData.sel.append(
+                    Choice(f'[{track_id}]: [MKV] {track_name}', value=track_id)
+                )
+
     extSubs = searchMedia(subsData.root, subsData.prefix, searchExtSubsFile)
     for s in extSubs:
         fileIdx += 1
         track_id = f'{fileIdx}:0'
-        
-        subsData.inf[track_id] = { "file": s.path, "codec": s.ext, "title": s.name, "ext": True }
+
+        subsData.inf[track_id] = {
+            'file': s.path,
+            'codec': s.ext,
+            'title': s.name,
+            'ext': True,
+        }
         subsData.sel.append(Choice(f'[{track_id}]: {s.name}', value=track_id))
-    
-    subsData.inf['-1'] = { "file": None, "codec": None, "title": None, "ext": True }
+
+    subsData.inf['-1'] = {'file': None, 'codec': None, 'title': None, 'ext': True}
     subsData.sel.append(Choice('[ -1]: Skip', value='-1'))
     return subsData
 
+
 # crc32 calc
 def calculate_crc32(data: bytes) -> int:
-    return zlib.crc32(data) & 0xffffffff
+    return zlib.crc32(data) & 0xFFFFFFFF
+
 
 # create empty image
 def create_img(width, height):
     return Image.new('RGBA', (width, height), (0, 0, 0, 0))
+
 
 # trim image
 def trim_img(img, threshold=19):
     # Get the alpha channel (transparency)
     alpha = img.getchannel('A')
     alpha_np = np.array(alpha)
-    
+
     # Create a mask where alpha is above the threshold
     mask = alpha_np > int(threshold / 100 * 255)
     if not np.any(mask):
@@ -403,56 +453,70 @@ def trim_img(img, threshold=19):
     trimmed_img = img.crop((x0, y0, x1, y1))
     return trimmed_img, (x0, y0)
 
+
 # png header
 PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
-class NotPNGError(Exception): pass
-class NotAPNGError(Exception): pass
-def is_not_png(err): return isinstance(err, NotPNGError)
-def is_not_apng(err): return isinstance(err, NotAPNGError)
+
+
+class NotPNGError(Exception):
+    pass
+
+
+class NotAPNGError(Exception):
+    pass
+
+
+def is_not_png(err):
+    return isinstance(err, NotPNGError)
+
+
+def is_not_apng(err):
+    return isinstance(err, NotAPNGError)
+
 
 # iphone png to standart png
 def strip_cgbi_and_fix_png(buffer: bytes, remove_alpha_premult: bool = True) -> bytes:
     if buffer[:8] != PNG_SIGNATURE:
         raise NotPNGError('Not a PNG')
-    
+
     # check CgBI chunk
     offset = 8
     chunks = []
     is_cgbi_png = False
     while offset < len(buffer):
-        length = struct.unpack('>I', buffer[offset:offset + 4])[0]
-        chunk_type = buffer[offset + 4:offset + 8]
+        length = struct.unpack('>I', buffer[offset : offset + 4])[0]
+        chunk_type = buffer[offset + 4 : offset + 8]
         if chunk_type != b'CgBI':
-            chunks.append(buffer[offset:offset + 12 + length])
+            chunks.append(buffer[offset : offset + 12 + length])
         else:
             is_cgbi_png = True
         offset += 12 + length
         if chunk_type == b'IEND':
             break
-    
+
     # not iphone png
     if not is_cgbi_png:
         return buffer
-    
+
     # Rebuild PNG without CgBI
     rebuilt_png = PNG_SIGNATURE + b''.join(chunks)
-    
+
     # Load image from memory buffer
     with io.BytesIO(rebuilt_png) as img_buffer:
         img = Image.open(img_buffer)
         img = img.convert('RGBA')
-    
+
     # Process pixels
     arr = np.array(img)
     arr = arr[..., [2, 1, 0, 3]]  # Swap BGR -> RGB
     if remove_alpha_premult:
         alpha = arr[..., 3:4]
         nonzero_alpha = alpha != 0
-        
+
         rgb = arr[..., :3]
-        adjusted_rgb = (
-            (rgb[nonzero_alpha] * 255 + alpha[nonzero_alpha] // 2) // alpha[nonzero_alpha]
-        )
+        adjusted_rgb = (rgb[nonzero_alpha] * 255 + alpha[nonzero_alpha] // 2) // alpha[
+            nonzero_alpha
+        ]
         arr[..., :3][nonzero_alpha] = np.clip(adjusted_rgb, 0, 255)
 
     # Save image back to Image
@@ -461,6 +525,7 @@ def strip_cgbi_and_fix_png(buffer: bytes, remove_alpha_premult: bool = True) -> 
     final_img.save(output_buffer, format='PNG')
     return final_img
 
+
 # apng structure
 class APNG:
     def __init__(self):
@@ -468,7 +533,9 @@ class APNG:
         self.height = 0
         self.num_plays = 0
         self.play_time = 0
-        self.frames: List[Frame] = []
+        self.frames: list[APNGFrame] = []
+
+
 class APNGFrame:
     def __init__(self):
         self.left = 0
@@ -482,63 +549,64 @@ class APNGFrame:
         self.blendOp = 0
         self.data = None
 
+
 # apng parser
 def parse_apng(buffer: bytes) -> APNG:
     if buffer[:8] != PNG_SIGNATURE:
         raise NotPNGError('Not a PNG')
-    
+
     offset = 8
     is_animated = False
     while offset < len(buffer):
-        length = struct.unpack('>I', buffer[offset:offset + 4])[0]
-        chunk_type = buffer[offset + 4:offset + 8].decode('ascii')
+        length = struct.unpack('>I', buffer[offset : offset + 4])[0]
+        chunk_type = buffer[offset + 4 : offset + 8].decode('ascii')
         if chunk_type == 'acTL':
             is_animated = True
             break
         offset += 12 + length
         if chunk_type == 'IEND':
             break
-    
+
     if not is_animated:
         raise NotAPNGError('Not an animated PNG')
-    
+
     apng = APNG()
-    
+
     pre_data_parts, post_data_parts = [], []
     header_data_bytes = None
-    
+
     frame = None
     frame_number = 0
     offset = 8
-    
+
     while offset < len(buffer):
-        length = struct.unpack('>I', buffer[offset:offset + 4])[0]
-        chunk_type = buffer[offset + 4:offset + 8].decode('ascii')
-        chunk_data = buffer[offset + 8: offset + 8 + length]
-        
+        length = struct.unpack('>I', buffer[offset : offset + 4])[0]
+        chunk_type = buffer[offset + 4 : offset + 8].decode('ascii')
+        chunk_data = buffer[offset + 8 : offset + 8 + length]
+
         if chunk_type == 'IHDR':
             header_data_bytes = chunk_data
             apng.width, apng.height = struct.unpack('>II', chunk_data[:8])
-        
+
         elif chunk_type == 'acTL':
             apng.num_plays = struct.unpack('>I', chunk_data[4:8])[0]
-        
+
         elif chunk_type == 'fcTL':
             if frame:
                 apng.frames.append(frame)
                 frame_number += 1
-            
+
             frame = APNGFrame()
             frame.width, frame.height = struct.unpack('>II', chunk_data[4:12])
             frame.left, frame.top = struct.unpack('>II', chunk_data[12:20])
             frame.delay_num, frame.delay_den = struct.unpack('>HH', chunk_data[20:24])
             if frame.delay_den == 0:
-                print(f':: FRAME #{frame_number+1} DENOMINATOR DELAY WAS FIXED!')
+                print(f':: FRAME #{frame_number + 1} DENOMINATOR DELAY WAS FIXED!')
                 frame.delay_den = 100
-            
+
             frame.delay_ms = (frame.delay_num / frame.delay_den) * 1000
             apng.play_time += frame.delay_ms
-            
+
             frame.disposeOp, frame.blendOp = chunk_data[24], chunk_data[25]
             if frame_number == 0 and frame.disposeOp == 2:
                 frame.disposeOp = 1
@@ -548,28 +616,30 @@ def parse_apng(buffer: bytes) -> APNG:
                 data_start = 12 if chunk_type == 'fdAT' else 8
                 if not hasattr(frame, 'data_parts'):
                     frame.data_parts = []
-                frame.data_parts.append(buffer[offset + data_start: offset + 8 + length])
-        
+                frame.data_parts.append(
+                    buffer[offset + data_start : offset + 8 + length]
+                )
+
         elif chunk_type == 'IEND':
-            post_data_parts.append(buffer[offset: offset + 12 + length])
-        
+            post_data_parts.append(buffer[offset : offset + 12 + length])
+
         else:
-            pre_data_parts.append(buffer[offset: offset + 12 + length])
-        
+            pre_data_parts.append(buffer[offset : offset + 12 + length])
+
         offset += 12 + length
         if chunk_type == 'IEND':
             break
-    
+
     if frame:
         apng.frames.append(frame)
-    
+
     if not apng.frames:
         raise NotAPNGError('No animation frames found')
-    
+
     apng.play_time = round(apng.play_time, 3)
     pre_blob = b''.join(pre_data_parts)
     post_blob = b''.join(post_data_parts)
-    
+
     for frame in apng.frames:
         bb = bytearray(PNG_SIGNATURE)
         header_copy = bytearray(header_data_bytes)
@@ -582,42 +652,43 @@ def parse_apng(buffer: bytes) -> APNG:
         bb.extend(post_blob)
         frame.image_data = io.BytesIO(bb)
         del frame.data_parts  # cleanup
-    
+
     current_frame = create_img(apng.width, apng.height)
-    
+
     for frame in apng.frames:
         image_data = Image.open(frame.image_data).convert('RGBA')
         previous_frame = current_frame.copy()
         del frame.image_data
-        
+
         if frame.blendOp == 1:
             current_frame.paste(image_data, (frame.left, frame.top), image_data)
         else:
             cur_data = np.array(current_frame)
             overlay = np.array(image_data)
-            
+
             y1, y2 = frame.top, frame.top + frame.height
             x1, x2 = frame.left, frame.left + frame.width
-            
+
             cur_data[y1:y2, x1:x2] = overlay
             current_frame = Image.fromarray(cur_data, 'RGBA')
-         
+
         frame.data = current_frame
-        
+
         if frame.disposeOp == 1:
             current_frame = create_img(apng.width, apng.height)
         elif frame.disposeOp == 2:
             current_frame = previous_frame
-    
+
     return apng
+
 
 # make png chunk
 def make_chunk_bytes(chunk_type: str, data_bytes: bytes) -> bytes:
     chunk_type_bytes = chunk_type.encode('ascii')
     crc = calculate_crc32(chunk_type_bytes + data_bytes)
     return (
-        struct.pack('>I', len(data_bytes)) +
-        chunk_type_bytes +
-        data_bytes +
-        struct.pack('>I', crc)
+        struct.pack('>I', len(data_bytes))
+        + chunk_type_bytes
+        + data_bytes
+        + struct.pack('>I', crc)
     )

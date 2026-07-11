@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-from pathlib import Path
+import json
+import mimetypes
+import shutil
 import subprocess
 import sys
-import shutil
-import mimetypes
 import tempfile
-import json
+from pathlib import Path
+
 import questionary
 
 
@@ -14,13 +15,33 @@ def ask_settings():
     default_out = '<same as source>'
 
     return {
-        'src_dir': Path(questionary.text('Source directory:', default=default_src).ask()).expanduser().resolve(),
-        'out_dir': Path(questionary.text('Output directory (default: same):', default=default_out).ask()).expanduser().resolve()
-        if questionary.text('Output directory (default: same):', default=default_out).ask().strip() not in ('', default_out) else None,
-        'video_title': questionary.text('Track title for VIDEO:', default='Video').ask(),
+        'src_dir': Path(
+            questionary.text('Source directory:', default=default_src).ask()
+        )
+        .expanduser()
+        .resolve(),
+        'out_dir': Path(
+            questionary.text(
+                'Output directory (default: same):', default=default_out
+            ).ask()
+        )
+        .expanduser()
+        .resolve()
+        if questionary.text('Output directory (default: same):', default=default_out)
+        .ask()
+        .strip()
+        not in ('', default_out)
+        else None,
+        'video_title': questionary.text(
+            'Track title for VIDEO:', default='Video'
+        ).ask(),
         'audio_lang': questionary.text('Language code for AUDIO:', default='ja').ask(),
-        'sub_lang': questionary.text('Language code for SUBTITLES:', default='en').ask(),
-        'sub_track_name': questionary.text('Track name for SUBTITLES:', default='English').ask(),
+        'sub_lang': questionary.text(
+            'Language code for SUBTITLES:', default='en'
+        ).ask(),
+        'sub_track_name': questionary.text(
+            'Track name for SUBTITLES:', default='English'
+        ).ask(),
     }
 
 
@@ -38,29 +59,42 @@ def build_option_array(
     video_title: str,
     audio_lang: str,
     sub_lang: str,
-    sub_track_name: str
+    sub_track_name: str,
 ) -> list:
     args = [
-        "--disable-track-statistics-tags",
-        "--engage", "no_variable_data",
-        "--no-date",
-        "-o", str(out_path),
-        "--no-global-tags",
-        "--track-name", f"0:{video_title}",
-        "--language", f"1:{audio_lang}",
+        '--disable-track-statistics-tags',
+        '--engage',
+        'no_variable_data',
+        '--no-date',
+        '-o',
+        str(out_path),
+        '--no-global-tags',
+        '--track-name',
+        f'0:{video_title}',
+        '--language',
+        f'1:{audio_lang}',
         str(mkv),
-        "--language", f"0:{sub_lang}",
-        "--track-name", f"0:{sub_track_name}",
+        '--language',
+        f'0:{sub_lang}',
+        '--track-name',
+        f'0:{sub_track_name}',
         str(subs),
-        "--chapter-language", "eng",
-        "--chapters", str(chap),
+        '--chapter-language',
+        'eng',
+        '--chapters',
+        str(chap),
     ]
     for font in fonts:
-        args.extend([
-            "--attachment-mime-type", guess_mime(font),
-            "--attachment-name", font.name,
-            "--attach-file", str(font),
-        ])
+        args.extend(
+            [
+                '--attachment-mime-type',
+                guess_mime(font),
+                '--attachment-name',
+                font.name,
+                '--attach-file',
+                str(font),
+            ]
+        )
     return args
 
 
@@ -84,7 +118,11 @@ def mux_folder(settings):
     chapters_dir = src_dir / 'chapters'
     fonts_dir = src_dir / 'fonts'
 
-    fonts = sorted(fonts_dir.glob('*.ttf')) + sorted(fonts_dir.glob('*.otf')) if fonts_dir.exists() else []
+    fonts = (
+        sorted(fonts_dir.glob('*.ttf')) + sorted(fonts_dir.glob('*.otf'))
+        if fonts_dir.exists()
+        else []
+    )
 
     mkvs = sorted(src_dir.glob('*.mkv'))
     if not mkvs:
@@ -106,12 +144,21 @@ def mux_folder(settings):
         out_path = dest_dir / f'{stem}_muxed.mkv'
 
         args = build_option_array(
-            mkv, subs, chap, fonts, out_path,
-            video_title, audio_lang, sub_lang, sub_track_name
+            mkv,
+            subs,
+            chap,
+            fonts,
+            out_path,
+            video_title,
+            audio_lang,
+            sub_lang,
+            sub_track_name,
         )
 
         # Write args to a valid JSON array
-        with tempfile.NamedTemporaryFile('w', delete=False, suffix='.json', encoding='utf-8') as f:
+        with tempfile.NamedTemporaryFile(
+            'w', delete=False, suffix='.json', encoding='utf-8'
+        ) as f:
             json.dump(args, f, ensure_ascii=False, indent=2)
             option_file = Path(f.name)
 

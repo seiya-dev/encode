@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
 
 import os
-import re
 import sys
-import time
-import subprocess
-
-from pathlib import Path
-from pathlib import PurePath
+from pathlib import Path, PurePath
 
 try:
-    from questionary import text as qtext, press_any_key_to_continue as qpause
-    from questionary import Choice, Validator, ValidationError
-    from PIL import Image
     import numpy as np
+    from PIL import Image
+    from questionary import press_any_key_to_continue as qpause
+    from questionary import text as qtext
 except ModuleNotFoundError:
     print(':: Please install required modules: pip install numpy Pillow questionary')
     input(':: Press enter to continue...\n')
@@ -23,8 +18,9 @@ try:
     from _encHelper import PathValidator, trim_img
 except ModuleNotFoundError:
     print(':: Encode Helper is MISSING...')
-    qpause(message = ':: Press enter to continue...\n').ask()
+    qpause(message=':: Press enter to continue...\n').ask()
     exit()
+
 
 def configFile(inFile: Path):
     # Open the PNG image
@@ -48,7 +44,7 @@ def configFile(inFile: Path):
 
     # Trim the transparent edges
     trimmed_img, (offset_x, offset_y) = trim_img(cleaned_img, threshold=19)
-    
+
     # Log the original and trimmed sizes
     src_size = f'{img.width}x{img.height}'
     trim_size = f'{trimmed_img.width}x{trimmed_img.height}+{offset_x}+{offset_y}'
@@ -58,7 +54,7 @@ def configFile(inFile: Path):
     trim_path = str(inFile).replace('.png', '_trim.png')
     trimmed_img.save(trim_path)
     print(f':: Trimmed PNG: {trim_path}')
-    
+
     # Create a WebP version if the image is large
     if trimmed_img.width > 512 or trimmed_img.height > 512:
         webp_path = str(inFile).replace('.png', '_webp_512.webp')
@@ -66,23 +62,25 @@ def configFile(inFile: Path):
         trimmed_img.save(webp_path, 'WEBP', lossless=True)
         print(f':: Converted WebP: {webp_path}')
 
+
 # folder
 def configFolder(inPath: Path):
-    inFile = list()
-    
+    inFile = []
+
     for file in os.listdir(inPath):
         file = os.path.join(inPath, file)
         fileExt = PurePath(file).suffix.lower()
         if extList.count(fileExt) > 0:
             inFile.append(file)
-    
+
     for i in range(len(inFile)):
         configFile(inFile[i])
+
 
 # set folder
 if len(sys.argv) < 2:
     inputPath = qtext(':: Folder/File: ', validate=PathValidator).ask()
-    inputPath = inputPath.strip('\"')
+    inputPath = inputPath.strip('"')
 else:
     inputPath = sys.argv[1]
 
@@ -105,9 +103,9 @@ try:
     else:
         print(f':: Input path is not a folder or png file: {inputPath}')
 except Exception as err:
-    print(f':: Something goes wrong...')
+    print(':: Something goes wrong...')
     print(f':: {type(err).__name__}: {err}')
 
 # end
-if os.environ.get('isBatch') is None:
-    qpause(message = '\n:: Press enter to continue...\n').ask()
+if os.environ.get('ISBATCH') is None:
+    qpause(message='\n:: Press enter to continue...\n').ask()

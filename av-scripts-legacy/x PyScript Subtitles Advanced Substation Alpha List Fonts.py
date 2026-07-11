@@ -1,6 +1,8 @@
-from PIL import ImageFont
 import os
 import sys
+
+from PIL import ImageFont
+
 
 def find_system_font_dirs():
     if sys.platform.startswith('win'):
@@ -21,6 +23,7 @@ def find_system_font_dirs():
             os.path.expanduser('~/.fonts'),
         ]
 
+
 def get_fonts():
     font_dirs = find_system_font_dirs()
     font_list = []
@@ -37,6 +40,7 @@ def get_fonts():
                             continue
     return sorted(set(font_list))
 
+
 def parse_styles(subtitle_lines):
     style_list = []
     for line in subtitle_lines:
@@ -46,6 +50,7 @@ def parse_styles(subtitle_lines):
                 style_name = parts[1].split(',')[0].strip()
                 style_list.append(style_name)
     return style_list
+
 
 if __name__ == '__main__':
     subtitle_text = []
